@@ -1,0 +1,13 @@
+{
+  "name": "Doca",
+  "short_name": "Doca",
+  "description": "Doca — operação de base J&T. Uma base. Toda a operação.",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "theme_color": "#0071E3",
+  "background_color": "#F2F2F7",
+  "display": "standalone",
+  "start_url": "/"
+}
