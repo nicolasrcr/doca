@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
 import { fmtN, fmtPct, norm } from "../lib/format";
 import { scanJmsFiles, type ImportScan } from "../lib/importer";
@@ -55,7 +55,7 @@ function ChecksPanel({ checks, onFix, busy }: { checks: Check[]; onFix: (horas: 
   );
 }
 
-export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string | null) => void }) {
+export default function ImportWizard({ onDone, initialFiles }: { onDone: (firstBaseId: string | null, totalBases: number) => void; initialFiles?: File[] }) {
   const { bases, orgs, orgRoles, isSuperAdmin, importBases } = useDoca();
   const [step, setStep] = useState<Step>("idle");
   const [over, setOver] = useState(false);
@@ -129,6 +129,15 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
     await readAll(next);
   };
 
+  const startedRef = useRef(false);
+  useEffect(() => {
+    if (initialFiles?.length && !startedRef.current) {
+      startedRef.current = true;
+      void handleFiles(initialFiles);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const removeFile = async (f: File) => {
     const next = files.filter((x) => fileId(x) !== fileId(f));
     setFiles(next);
@@ -168,7 +177,7 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
         {!scan?.carta && (
           <div className="warnbox">Os dias foram salvos como <b>incompletos</b>: falta a Carta de porte para calcular as entregas. Importe-a em Operação para completar a análise.</div>
         )}
-        <button className="btn primary" onClick={() => onDone(summary.firstBaseId)}>Ver a visão geral das bases</button>
+        <button className="btn primary" autoFocus onClick={() => onDone(summary.firstBaseId, summary.created + summary.existing)}>{summary.created + summary.existing > 1 ? "Ver a visão geral das bases" : "Ver o painel da base"}</button>
       </div>
     );
   }
@@ -284,7 +293,7 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
         )}
         {error && <div className="warnbox">{error}</div>}
         <div className="row" style={{ marginTop: "1rem" }}>
-          <button className="btn primary" disabled={step === "importing" || !included.length || missingName} onClick={confirm}>
+          <button className="btn primary" autoFocus disabled={step === "importing" || !included.length || missingName} onClick={confirm}>
             {step === "importing" ? "Importando…" : scan.carta ? `Confirmar e importar ${included.length} base${included.length === 1 ? "" : "s"}` : `Criar ${included.length} base${included.length === 1 ? "" : "s"} com dados incompletos`}
           </button>
           <button className="btn" disabled={step === "importing"} onClick={() => { setStep("idle"); setScan(null); setRows([]); setFiles([]); setShiftHoras(0); }}>Cancelar</button>

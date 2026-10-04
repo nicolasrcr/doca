@@ -294,6 +294,7 @@ export interface SheetTable {
 }
 
 export const SCREEN_IDS = [
+  "painel",
   "geral",
   "saude",
   "ajustes",
@@ -318,6 +319,7 @@ export const SCREEN_IDS = [
 export type ScreenId = (typeof SCREEN_IDS)[number];
 
 export const SCREENS: Record<ScreenId, { label: string; cat: string }> = {
+  painel: { label: "Painel da base", cat: "indicadores" },
   geral: { label: "Visão geral das bases", cat: "indicadores" },
   saude: { label: "Saúde e sugestões da base", cat: "indicadores" },
   ajustes: { label: "Dados da base", cat: "infos" },

@@ -7,6 +7,7 @@ import { useSLAAlerts } from "../hooks/useSLAAlert";
 import SLAAlertBanner from "../components/SLAAlertBanner";
 import SLAAlertModal from "../components/SLAAlertModal";
 import type { ActiveScreen } from "../hooks/useNav";
+import { ImportStrip } from "../components/ImportDialog";
 
 export default function Home({ openScreen }: { openScreen: (id: ActiveScreen) => void }) {
   const { curBase, result, history, occRows, payouts, drivers, bases, dayDate } = useDoca();
@@ -89,11 +90,18 @@ export default function Home({ openScreen }: { openScreen: (id: ActiveScreen) =>
         }}
       />
 
+      <div style={{ padding: "0 16px" }}>
+        <ImportStrip
+          titulo={history.length ? "Atualizar com as planilhas de hoje" : "Comece aqui: arraste as planilhas do JMS"}
+          texto="Solte os arquivos em qualquer lugar da tela ou escolha-os aqui. Eu confiro, mostro o que encontrei e você confirma."
+        />
+      </div>
+
       <div className="manifestHero">
         {pct === null ? (
           <div>
             <h2 style={{ marginBottom: ".3rem", color: "#fff" }}>Nenhum dia registrado ainda</h2>
-            <p style={{ color: "rgba(255,255,255,.85)" }}>Importe as planilhas do JMS em Operação para ver o primeiro número aqui.</p>
+            <p style={{ color: "rgba(255,255,255,.85)" }}>Importe as planilhas do JMS para ver o primeiro número aqui.</p>
           </div>
         ) : (
           <>

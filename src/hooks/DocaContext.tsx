@@ -1075,10 +1075,10 @@ export function DocaProvider({ children }: { children: ReactNode }) {
         if (error) toast(`Não consegui salvar o dia de "${it.name}": ${error.message}`);
         else days++;
       }
-      await Promise.all([loadBases(), loadOrgs()]);
+      await Promise.all([loadBases(), loadOrgs(), curBase ? loadHistory(curBase.id) : Promise.resolve()]);
       return { created, existing, days, firstBaseId };
     },
-    [user, bases, toast, loadBases, loadOrgs]
+    [user, bases, curBase, toast, loadBases, loadOrgs, loadHistory]
   );
 
   const value: DocaState = {

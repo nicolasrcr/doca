@@ -267,3 +267,14 @@ table.rank th{font-size:.78rem;color:var(--muted);font-weight:500}
 .authCard .form input{max-width:none}
 
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* importação sempre à mão */
+.importDrop{position:fixed;inset:0;z-index:80;background:color-mix(in srgb,var(--focus) 18%,transparent);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;pointer-events:none}
+.importDrop>div{background:var(--surface);border:2px dashed var(--focus);border-radius:var(--r-lg);padding:2.5rem 3rem;text-align:center;box-shadow:var(--shadow-lg);display:grid;gap:.4rem}
+.importDrop b{font-size:1.4rem}
+.importDrop span{color:var(--muted)}
+.importModal{position:fixed;inset:0;z-index:70;background:rgba(10,12,16,.55);display:flex;align-items:flex-start;justify-content:center;padding:4vh 1rem;overflow:auto}
+.importBox{background:var(--bg);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);width:100%;max-width:980px;padding:1.2rem}
+.importStrip{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;border:2px dashed var(--focus);background:color-mix(in srgb,var(--focus) 6%,var(--surface));border-radius:var(--r);padding:1rem 1.2rem;margin-bottom:1rem}
+.importStrip b{display:block;font-size:1.05rem}
+.importStrip span{display:block;color:var(--muted);font-size:.88rem;margin-top:.15rem}
