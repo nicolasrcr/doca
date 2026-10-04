@@ -9,6 +9,8 @@ import {
   type ColDatum, type FarolKey, type HBarDatum, type LinePoint,
 } from "../components/viz/Viz";
 import { useImport } from "../components/ImportDialog";
+import { agruparMotivos } from "../lib/taxonomia";
+import { preverFechamentoMes } from "../lib/previsao";
 
 const shiftDay = (iso: string, d: number) => {
   const x = new Date(iso + "T12:00:00");
@@ -107,7 +109,20 @@ export function PainelView({ base, history, openScreen, onImport }: {
     for (const d of v.ok) for (const [k, n] of Object.entries(d[campo] || {})) acc[k] = (acc[k] || 0) + n;
     return Object.entries(acc) as [string, number][];
   };
-  const motivos = topComOutros(soma("motivos"));
+  const motivosBrutos = Object.fromEntries(soma("motivos"));
+  const categorias = agruparMotivos(motivosBrutos);
+  const motivos = topComOutros(categorias.map((c) => [c.categoria, c.total] as [string, number]));
+  const motivosTabela = categorias.flatMap((c) => c.motivos.map(([m, n]) => [c.categoria, m, fmtN(n)]));
+  const previsao = preverFechamentoMes(history, hoje, meta);
+  const perdidosTotal = s.bairros.reduce((a, b) => a + Math.round(b.total * (1 - b.pct)), 0);
+  const topBairros: HBarDatum[] = s.bairros.slice(0, 8).map((b) => {
+    const perd = Math.round(b.total * (1 - b.pct));
+    return {
+      label: b.nome, value: perdidosTotal ? perd / perdidosTotal : 0, text: `${fmtN(perd)} · ${fmtPct(perdidosTotal ? perd / perdidosTotal : 0)}`, destaque: b.farol === "vermelho",
+      tip: <><TipTitle>{b.nome}</TipTitle><TipRow label="Pacotes" value={fmtN(b.total)} /><TipRow label="Entregue" value={fmtPct(b.pct)} /><TipRow label="Não entregues" value={fmtN(perd)} />{b.melhor && <TipRow label="Quem mais atende" value={b.melhor} />}</>,
+    };
+  });
+  const concentra5 = perdidosTotal ? s.bairros.slice(0, 5).reduce((a, b) => a + Math.round(b.total * (1 - b.pct)), 0) / perdidosTotal : 0;
   const tipos = topComOutros(soma("tipos_produto"));
   const pagos = topComOutros(soma("pagamentos"));
 
@@ -214,8 +229,8 @@ export function PainelView({ base, history, openScreen, onImport }: {
             <div className="viz-grid">
               {motivos.length > 0 && (
                 <div className="viz-span-4">
-                  <ChartCard title="Motivos de problema" caption="Top 5 do período" table={<DataTable cols={["Motivo", "Casos"]} rows={motivos.map((m) => [m.label, fmtN(m.value)])} />}>
-                    <Donut name="Motivos de problema" data={motivos} centerLabel="problemas" />
+                  <ChartCard title="Problemas por tipo" caption="Motivos do JMS agrupados em categorias" table={<DataTable cols={["Categoria", "Motivo no JMS", "Casos"]} rows={motivosTabela} />}>
+                    <Donut name="Problemas por tipo" data={motivos} centerLabel="problemas" />
                   </ChartCard>
                 </div>
               )}
@@ -234,6 +249,39 @@ export function PainelView({ base, history, openScreen, onImport }: {
                 </div>
               )}
             </div>
+
+            {(previsao || topBairros.length > 0) && (
+              <div className="viz-grid">
+                {previsao && (
+                  <div className="viz-span-6">
+                    <ChartCard title="Fechamento do mês (previsão)" caption={`Estimativa pelo ritmo dos últimos 14 dias · ${previsao.diasRestantes} dias de operação restantes`}>
+                      <div className="previsao">
+                        <div className="big">{fmtPct(previsao.pctProjetado)}</div>
+                        <div className="small muted">
+                          {previsao.pctProjetado >= meta ? "✓ Deve fechar o mês na meta" : "⚠ Deve fechar o mês abaixo da meta"} ({fmtPct(meta)}). Hoje o mês está em {fmtPct(previsao.pctAtual)}.
+                        </div>
+                        {previsao.necessario !== null && previsao.pctProjetado < meta && (
+                          <p className="small" style={{ marginTop: ".6rem" }}>
+                            {previsao.alcancavel
+                              ? <>Para fechar na meta, a base precisa entregar <b>{fmtPct(Math.max(0, previsao.necessario))}</b> dos pacotes daqui para frente.</>
+                              : <>Mesmo entregando tudo nos dias que restam, não dá para chegar à meta de {fmtPct(meta)} neste mês. Foque em ficar o mais perto possível.</>}
+                          </p>
+                        )}
+                        <p className="small muted" style={{ marginTop: ".5rem" }}>É uma estimativa: assume o mesmo volume de {fmtN(Math.round(previsao.volumeDia))} pacotes por dia e o mesmo ritmo recente. Chuva, feriado e picos mudam o resultado.</p>
+                      </div>
+                    </ChartCard>
+                  </div>
+                )}
+                {topBairros.length > 0 && (
+                  <div className="viz-span-6">
+                    <ChartCard title="Onde se concentram as entregas perdidas" caption={`Os 5 primeiros bairros têm ${fmtPct(concentra5)} dos pacotes não entregues`}
+                      table={<DataTable cols={["Bairro", "Pacotes", "% entregue", "Não entregues"]} rows={s.bairros.slice(0, 15).map((b) => [b.nome, fmtN(b.total), fmtPct(b.pct), fmtN(Math.round(b.total * (1 - b.pct)))])} />}>
+                      <HBars name="Pacotes não entregues por bairro" data={topBairros} />
+                    </ChartCard>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </section>

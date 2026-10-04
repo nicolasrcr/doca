@@ -3,6 +3,7 @@ import { detectReportType, prepare, readRows } from "./parse";
 import { mae, parseDateTime, recompute } from "./compute";
 import type { DayResult, Driver, SheetTable } from "./types";
 import { validarTabelas, type Check } from "./validate";
+import { acharDivergencias, type Divergencia } from "./divergencias";
 
 export const BASE_KEYS = ["cod", "ent", "prob", "base", "distrito", "hr_saida", "hr_chegada", "retencao", "tipo_produto", "peso", "assinante", "origem", "bloqueado", "hr_problema"];
 export const ENT_KEYS = ["cod", "responsavel", "pagamento", "centro_financeiro", "status_carta", "origem", "bloqueado", "hr_digitacao"];
@@ -23,6 +24,7 @@ export interface ImportScan {
   ignored: string[]; // arquivos que não parecem relatório do JMS
   enderecos: number; // pedidos para os quais achamos bairro/CEP do destinatário
   checks: Check[]; // verificação automática dos arquivos (fuso, colunas, dias, cruzamento)
+  divergencias: Divergencia[]; // lista com código e linha: duplicados, sem entregador, na Carta e fora da bipagem
 }
 
 export interface ScanOptions {
@@ -198,7 +200,8 @@ export async function scanJmsFiles(files: File[], opts: ScanOptions = {}): Promi
   }
   groups.sort((a, b) => b.total - a.total);
   const checks = validarTabelas(bip, carta, { shiftHoras: opts.shiftHoras });
-  return { groups, carta, ignored, enderecos, checks };
+  const divergencias = acharDivergencias(bip, carta);
+  return { groups, carta, ignored, enderecos, checks, divergencias };
 }
 
 export interface ImportItem {

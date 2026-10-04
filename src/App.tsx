@@ -29,6 +29,7 @@ import Integracoes from "./pages/Integracoes";
 import Alertas from "./pages/Alertas";
 import Cabine from "./pages/Cabine";
 import QrConf from "./pages/QrConf";
+import Auditoria from "./pages/Auditoria";
 import PacotesParados from "./pages/PacotesParados";
 import Pendencias from "./pages/Pendencias";
 import Precos from "./pages/Precos";
@@ -95,6 +96,7 @@ function ShellBody({ nav }: { nav: Nav }) {
     motoristas: () => <Motoristas />,
     conferencia: () => <Conferencia />,
     qrconf: () => <QrConf />,
+    auditoria: () => <Auditoria />,
     parados: () => <PacotesParados />,
     pendencias: () => <Pendencias openScreen={nav.openScreen} />,
     fechamento: () => <Fechamento />,

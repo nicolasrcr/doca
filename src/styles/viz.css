@@ -81,3 +81,4 @@
 .viz-tiles4{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
 @media (max-width:560px){.viz-tiles4{grid-template-columns:1fr}}
 .viz-span-4>.viz-tile{height:100%;align-content:space-between}
+.previsao .big{font-size:3.4rem;font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}

@@ -7,6 +7,7 @@ import { useDialog } from "../hooks/useDialog";
 import { readRows, prepare, detectReportType } from "../lib/parse";
 import { faltam, level } from "../lib/compute";
 import { fmtN, fmtPct, brDate } from "../lib/format";
+import { contextoWhats, geradoEm } from "../lib/share";
 import type { SheetTable } from "../lib/types";
 import type { ActiveScreen } from "../hooks/useNav";
 
@@ -111,6 +112,7 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
     setDayDate,
     saveDay,
     canEdit,
+    audit,
   } = useDoca();
   const toast = useToast();
   const dialog = useDialog();
@@ -290,8 +292,8 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
     const L = result.list.filter((d) => sel.has(d.nome)).sort((a, b) => b.pct - a.pct);
     const t = L.reduce((a, d) => ({ t: a.t + d.t, e: a.e + d.e, p: a.p + d.p }), { t: 0, e: 0, p: 0 });
     const f = faltam(t.t, t.e, meta);
-    let s = `*Relatório de entregas | ${curBase.name}*\n📅 ${brDate(dayDate)}\n\n`;
-    s += `📦 Pacotes: ${fmtN(t.t)}\n✅ Entregues: ${fmtN(t.e)} (${fmtPct(t.t ? t.e / t.t : 0)})\n⚠️ Com problema: ${fmtN(t.p)}\n🎯 Meta ${curBase.meta}%: ${f ? `faltaram ${fmtN(f)} entregas` : "batida"}\n\n*Por motorista*\n`;
+    let s = `*Relatório de entregas*\n${contextoWhats(curBase.name, dayDate)}\n`;
+    s += `👥 ${L.length} motorista${L.length === 1 ? "" : "s"} neste resumo\n📦 Pacotes: ${fmtN(t.t)}\n✅ Entregues: ${fmtN(t.e)} (${fmtPct(t.t ? t.e / t.t : 0)})\n⚠️ Com problema: ${fmtN(t.p)}\n🎯 Meta ${curBase.meta}%: ${f ? `faltaram ${fmtN(f)} entregas` : "batida"}\n\n*Por motorista*\n`;
     for (const d of L) {
       const ic = { ok: "🟢", warn: "🟡", bad: "🔴" }[level(d.pct, meta, alerta)];
       s += `${ic} *${d.nome}*\n    ${fmtPct(d.pct)} | ${d.e}/${d.t} entregues${d.p ? ` | ${d.p} problema${d.p > 1 ? "s" : ""}` : ""}\n`;
@@ -346,6 +348,7 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
             onClick: () => {
               if (!sel.size) { toast("Escolha ao menos um motorista"); return; }
               const txt = whatsText(sel);
+              void audit("resumo_whatsapp", { dia: dayDate, motoristas: sel.size });
               dialog.open(
                 "Resumo para WhatsApp",
                 <div>
@@ -365,7 +368,7 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
   const drawImage = () => {
     if (!result || !curBase) return null;
     const L = [...result.list].sort((a, b) => b.pct - a.pct);
-    const W = 1000, rowH = 40, top = 170, H = top + L.length * rowH + 60;
+    const W = 1000, rowH = 46, top = 170, H = top + L.length * rowH + 60;
     const c = document.createElement("canvas");
     const k = 2;
     c.width = W * k; c.height = H * k;
@@ -394,8 +397,12 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
       g.strokeStyle = COL.ink; g.setLineDash([4, 3]); g.lineWidth = 2;
       g.beginPath(); g.moveTo(mx, y + 2); g.lineTo(mx, y + 30); g.stroke(); g.setLineDash([]);
       g.fillStyle = COL[level(d.pct, meta, alerta)]; g.font = "700 22px Arial, sans-serif"; g.fillText(fmtPct(d.pct), barX + barW + 14, y + 23);
+      // o estado também em texto (a cor sozinha não basta para quem não distingue cores ou imprime em preto e branco)
+      const lv = level(d.pct, meta, alerta);
+      g.font = "600 12px Arial, sans-serif"; g.fillStyle = COL.muted;
+      g.fillText(lv === "ok" ? "✓ Meta atingida" : lv === "warn" ? "▲ Abaixo da meta" : "✕ Crítico", barX + barW + 14, y + 38);
     });
-    g.fillStyle = COL.muted; g.font = "400 13px Arial, sans-serif"; g.fillText("Gerado por Doca", 32, H - 24);
+    g.fillStyle = COL.muted; g.font = "400 13px Arial, sans-serif"; g.fillText(`Gerado por Doca em ${geradoEm()}. Ordenado do melhor para o pior resultado.`, 32, H - 24);
     return c;
   };
 
@@ -403,6 +410,7 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
     const c = drawImage();
     if (!c) return;
     const url = c.toDataURL("image/png");
+    void audit("imagem_ranking", { dia: dayDate });
     dialog.open(
       "Imagem do ranking",
       <img className="preview" src={url} alt="Ranking de entregas por motorista" />,
