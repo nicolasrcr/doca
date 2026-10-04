@@ -11,7 +11,10 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "./useAuth";
 import { useToast } from "./useToast";
 import { buildAliasIndex, canonicalDriver, computeColeta, recompute, type ColetaResult } from "../lib/compute";
-import { todayISO } from "../lib/format";
+import { norm, todayISO } from "../lib/format";
+import { buildDayRow } from "../lib/dayRow";
+import { computeGroup, consolidate, type ImportItem } from "../lib/importer";
+import type { SheetTable as ImportSheet } from "../lib/types";
 import type {
   AllowedEmail,
   Base,
@@ -54,6 +57,11 @@ interface DocaState {
   authorizeEmail: (email: string) => Promise<boolean>;
   removeAllowedEmail: (email: string) => Promise<void>;
   createMyOrganization: (name: string, baseId?: string | null) => Promise<boolean>;
+  importBases: (
+    items: ImportItem[],
+    carta: ImportSheet | null,
+    opts: { orgId?: string | null; companyName?: string | null }
+  ) => Promise<{ created: number; existing: number; days: number; firstBaseId: string | null } | null>;
   createOrganization: (name: string, adminEmail: string) => Promise<boolean>;
   inviteOrgMember: (orgId: string, email: string, role: OrgRole) => Promise<boolean>;
   updateOrgMemberRole: (orgId: string, userId: string, role: OrgRole) => Promise<void>;
@@ -425,51 +433,14 @@ export function DocaProvider({ children }: { children: ReactNode }) {
 
   const saveDay = useCallback(async () => {
     if (!curBase || !result) return false;
-    // Agregados avançados do dia — persistidos para virar tendência em Histórico
-    // (sem isso, tipo de produto/pagamento/peso/SLA se perdiam ao salvar o dia).
-    const itens = result.list.flatMap((d) => d.itens);
-    const comHorarios = itens.filter((it) => it.hr_saida && it.hr_chegada);
-    const slaOk = comHorarios.filter((it) => it.sla_ok).length;
-    const pesoTotal = itens.reduce((a, it) => a + (it.peso || 0), 0);
-    const pagamentos: Record<string, number> = {};
-    const tiposProduto: Record<string, number> = {};
-    for (const it of itens) {
-      if (it.pagamento) pagamentos[it.pagamento] = (pagamentos[it.pagamento] || 0) + 1;
-      if (it.tipo_produto) tiposProduto[it.tipo_produto] = (tiposProduto[it.tipo_produto] || 0) + 1;
-    }
-    const row = {
-      base_id: curBase.id,
+    const row = buildDayRow({
+      baseId: curBase.id,
       data: dayDate,
       meta: curBase.meta,
-      total: result.tot.t,
-      entregues: result.tot.e,
-      problemas: result.tot.p,
-      pendentes: result.tot.n,
-      motoristas: result.list.map((d) => ({
-        n: d.nome,
-        t: d.t,
-        e: d.e,
-        p: d.p,
-        q: d.n,
-        b: result.porBairro[d.nome] || {},
-      })),
-      motivos: result.motivos,
-      salvo_por: user?.email || "",
-      linhas_descartadas: result.linhasDescartadas,
-      coleta_total: coletaResult?.total || 0,
-      coleta_feita: coletaResult?.feita || 0,
-      coleta_falha_bipagem: coletaResult?.falhaBipagem || 0,
-      retido_base: result.tot.retidoBase,
-      devolucao: result.tot.devolucao,
-      com_assinatura: result.tot.comAssinatura,
-      sla_ok: slaOk,
-      sla_total: comHorarios.length,
-      peso_total: pesoTotal,
-      bloqueados: result.bloqueados.length,
-      divergentes: result.divergentes.length,
-      pagamentos,
-      tipos_produto: tiposProduto,
-    };
+      salvoPor: user?.email || "",
+      result,
+      coleta: coletaResult,
+    });
     const { error } = await supabase.from("days").upsert(row, { onConflict: "base_id,data" });
     if (error) {
       toast("Não consegui salvar o dia: " + error.message);
@@ -1006,6 +977,70 @@ export function DocaProvider({ children }: { children: ReactNode }) {
     [toast, loadOrgs, loadBases]
   );
 
+  const importBases = useCallback(
+    async (items: ImportItem[], carta: ImportSheet | null, opts: { orgId?: string | null; companyName?: string | null }) => {
+      if (!user) return null;
+      let merged: ImportItem[];
+      try {
+        merged = consolidate(items);
+      } catch (e) {
+        toast((e as Error).message);
+        return null;
+      }
+      let orgId = opts.orgId || null;
+      if (opts.companyName?.trim()) {
+        const { data, error } = await supabase.rpc("create_my_organization", { p_name: opts.companyName.trim(), p_base_id: null });
+        if (error) {
+          toast(error.message);
+          return null;
+        }
+        orgId = data as string;
+      }
+      const ids = new Map<string, { id: string; meta: number }>();
+      let created = 0;
+      let existing = 0;
+      let days = 0;
+      let firstBaseId: string | null = null;
+      for (const it of merged) {
+        const key = norm(it.name);
+        let b = ids.get(key);
+        if (!b) {
+          const found = bases.find((x) => norm(x.name) === key);
+          if (found) {
+            b = { id: found.id, meta: found.meta ?? 95 };
+            existing++;
+          } else {
+            const { data, error } = await supabase
+              .from("bases")
+              .insert({ name: it.name.trim(), owner_id: user.id, ...(orgId ? { org_id: orgId } : {}) })
+              .select()
+              .single();
+            if (error) {
+              toast(`Não consegui criar a base "${it.name}": ${error.message}`);
+              continue;
+            }
+            b = { id: (data as Base).id, meta: (data as Base).meta ?? 95 };
+            created++;
+          }
+          ids.set(key, b);
+          firstBaseId = firstBaseId || b.id;
+        }
+        // Sem a Carta de porte não há como saber o que foi entregue (o % ficaria zerado e o
+        // dashboard mostraria uma saúde falsa), então só criamos a base e não gravamos o dia.
+        if (!carta) continue;
+        const result = computeGroup(it.table, carta);
+        if (!result) continue;
+        const row = buildDayRow({ baseId: b.id, data: it.date, meta: b.meta, salvoPor: user.email || "", result });
+        const { error } = await supabase.from("days").upsert(row, { onConflict: "base_id,data" });
+        if (error) toast(`Não consegui salvar o dia de "${it.name}": ${error.message}`);
+        else days++;
+      }
+      await Promise.all([loadBases(), loadOrgs()]);
+      return { created, existing, days, firstBaseId };
+    },
+    [user, bases, toast, loadBases, loadOrgs]
+  );
+
   const value: DocaState = {
     ready,
     bases,
@@ -1028,6 +1063,7 @@ export function DocaProvider({ children }: { children: ReactNode }) {
     authorizeEmail,
     removeAllowedEmail,
     createMyOrganization,
+    importBases,
     createOrganization,
     inviteOrgMember,
     updateOrgMemberRole,

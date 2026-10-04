@@ -6,6 +6,7 @@ import { ToastProvider } from "./hooks/useToast";
 import { DialogProvider } from "./hooks/useDialog";
 import { useNav } from "./hooks/useNav";
 import Auth from "./components/Auth";
+import ImportWizard from "./components/ImportWizard";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import TabStrip from "./components/TabStrip";
@@ -41,10 +42,17 @@ function Shell() {
     return (
       <>
         <Header onHamb={() => {}} onHome={() => {}} onNewBase={async (name) => { const id = await createBase(name); selectBase(id); }} />
-        <main style={{ maxWidth: 1300, margin: "0 auto" }}>
-          <div className="empty">
-            <h3>Nenhuma base cadastrada</h3>
-            <p>Crie a primeira base para começar a importar as planilhas do JMS.</p>
+        <main style={{ maxWidth: 900, margin: "0 auto", padding: "1.5rem 1rem" }}>
+          <h2>Vamos começar</h2>
+          <p className="muted">Escolha como quer montar suas bases. Dá para fazer das duas formas depois.</p>
+          <div className="panel" style={{ marginBottom: "1rem" }}>
+            <h3>Já uso o JMS</h3>
+            <p className="muted small">Arraste as planilhas exportadas. Eu encontro as bases, mostro para você confirmar e já preencho o histórico.</p>
+            <ImportWizard onDone={async (id) => { if (id) await selectBase(id); nav.openScreen("geral"); }} />
+          </div>
+          <div className="panel">
+            <h3>Ainda não uso o JMS</h3>
+            <p className="muted small">Crie a base agora e importe as planilhas quando tiver.</p>
             <button
               className="btn primary"
               onClick={async () => {

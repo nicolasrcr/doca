@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
+import ImportWizard from "../components/ImportWizard";
 
 export default function Bases() {
   const { bases, curBase, selectBase, createBase, orgs, orgRoles, isSuperAdmin } = useDoca();
@@ -49,6 +50,11 @@ export default function Bases() {
             </tbody>
           </table>
         </div>
+      </div>
+      <div className="panel" style={{ marginTop: "1rem" }}>
+        <h3>Importar planilhas do JMS</h3>
+        <p className="muted small">Arraste as planilhas de uma ou várias bases. Eu encontro as bases, peço sua confirmação e crio ou atualizo cada uma.</p>
+        <ImportWizard onDone={async (id) => { if (id) await selectBase(id); }} />
       </div>
     </section>
   );
