@@ -123,6 +123,8 @@ export interface DayRecord {
   divergentes?: number; // pacotes com motorista divergente entre bipagem e carta de porte
   pagamentos?: Record<string, number>; // forma de pagamento -> contagem
   tipos_produto?: Record<string, number>; // tipo de produto -> contagem
+  carta_ok?: boolean; // false = faltou a Carta de porte: entregues/pendentes do dia não são confiáveis
+  bairros?: Record<string, { total: number; e: number; p: number; n: number }>; // estatística por bairro
 }
 
 export type OccurrenceStatus = "aberto" | "tratando" | "barrado" | "devolvido" | "resolvido";
@@ -281,6 +283,7 @@ export interface SheetTable {
 
 export const SCREEN_IDS = [
   "geral",
+  "saude",
   "ajustes",
   "entregas",
   "conferencia",
@@ -304,6 +307,7 @@ export type ScreenId = (typeof SCREEN_IDS)[number];
 
 export const SCREENS: Record<ScreenId, { label: string; cat: string }> = {
   geral: { label: "Visão geral das bases", cat: "indicadores" },
+  saude: { label: "Saúde e sugestões da base", cat: "indicadores" },
   ajustes: { label: "Dados da base", cat: "infos" },
   entregas: { label: "Monitoramento de bipagem de entrega", cat: "operacao" },
   conferencia: { label: "Conferência de carga", cat: "operacao" },

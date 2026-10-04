@@ -9,6 +9,7 @@ interface Row {
   include: boolean;
   name: string;
   date: string;
+  meta: number;
 }
 
 const fileId = (f: File) => `${f.name}|${f.size}|${f.lastModified}`;
@@ -70,7 +71,7 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
         res.groups.map((g) => {
           const key = groupKey(g.name, g.date);
           const old = prev.get(key);
-          return { id: g.id, key, include: old ? old.include : true, name: old ? old.name : g.name, date: old ? old.date : g.date };
+          return { id: g.id, key, include: old ? old.include : true, name: old ? old.name : g.name, date: old ? old.date : g.date, meta: old ? old.meta : 95 };
         })
       );
       setStep("preview");
@@ -100,7 +101,7 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
     setStep("importing");
     const items = included.map((r) => {
       const g = scan.groups.find((x) => x.id === r.id)!;
-      return { name: r.name.trim(), date: r.date, table: g.table };
+      return { name: r.name.trim(), date: r.date, meta: r.meta, table: g.table };
     });
     const res = await importBases(items, scan.carta, {
       orgId: orgId || null,
@@ -123,8 +124,11 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
           {summary.existing > 0 && <>{summary.existing} base{summary.existing === 1 ? "" : "s"} que já existia{summary.existing === 1 ? "" : "m"} atualizada{summary.existing === 1 ? "" : "s"}. </>}
           {summary.days > 0
             ? <>{summary.days} dia{summary.days === 1 ? "" : "s"} salvo{summary.days === 1 ? "" : "s"} no histórico.</>
-            : <>Nenhum dia foi gravado no histórico. Importe a Carta de porte junto com o Monitoramento de bipagem para trazer os números.</>}
+            : <>Nenhum dia foi gravado.</>}
         </p>
+        {!scan?.carta && (
+          <div className="warnbox">Os dias foram salvos como <b>incompletos</b>: falta a Carta de porte para calcular as entregas. Importe-a em Operação para completar a análise.</div>
+        )}
         <button className="btn primary" onClick={() => onDone(summary.firstBaseId)}>Ver a visão geral das bases</button>
       </div>
     );
@@ -153,14 +157,15 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
         )}
         {!scan.carta && (
           <div className="warnbox">
-            <b>Faltou a “Carta de porte”.</b> É ela que confirma quais pacotes foram entregues. Sem ela eu só crio as bases e
-            não gravo o histórico (senão o percentual de entrega ficaria zerado). Para importar os números agora, volte e
-            arraste também a Carta de porte junto com o Monitoramento de bipagem.
+            <b>Falta a “Carta de porte”.</b> É ela que confirma quais pacotes foram entregues, então o número de entregas ainda
+            não pode ser calculado. Vou salvar o que já dá (pacotes, motivos de problema, motoristas) e marcar esses dias como
+            incompletos, com um alerta nas telas. Para ver a saúde completa da base, importe também a Carta de porte (você pode
+            adicionar o arquivo agora, com “+ Adicionar mais arquivos”, ou depois em Operação).
           </div>
         )}
         <div className="tablewrap">
           <table className="drv">
-            <thead><tr><th></th><th>Base</th><th>Dia</th><th>Pacotes</th><th>Entregues</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Base</th><th>Dia</th><th>Meta de entrega</th><th>Pacotes</th><th>Entregues</th><th></th></tr></thead>
             <tbody>
               {rows.map((r, i) => {
                 const g = scan.groups.find((x) => x.id === r.id)!;
@@ -178,8 +183,21 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
                     <td>
                       <input type="date" value={r.date} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, date: e.target.value } : x)))} />
                     </td>
+                    <td>
+                      <input
+                        type="number"
+                        min={50}
+                        max={100}
+                        step={0.5}
+                        value={r.meta}
+                        disabled={!isNew(r.name)}
+                        title={isNew(r.name) ? "Meta de entrega desta base (%)" : "A base já existe: ajuste a meta em Dados da base"}
+                        onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, meta: parseFloat(e.target.value) || 95 } : x)))}
+                        style={{ width: 70 }}
+                      /> %
+                    </td>
                     <td className="num">{fmtN(g.total)}</td>
-                    <td className="num">{g.total ? fmtPct(g.entregues / g.total) : "—"}</td>
+                    <td className="num">{scan.carta ? (g.total ? fmtPct(g.entregues / g.total) : "—") : <span className="muted" title="Falta a Carta de porte">faltando</span>}</td>
                     <td>
                       {!r.name.trim() ? <span className="badge warn">sem nome</span> : isNew(r.name) ? <span className="badge ok">nova base</span> : <span className="badge">já existe — será atualizada</span>}
                     </td>
@@ -215,7 +233,7 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
         {error && <div className="warnbox">{error}</div>}
         <div className="row" style={{ marginTop: "1rem" }}>
           <button className="btn primary" disabled={step === "importing" || !included.length || missingName} onClick={confirm}>
-            {step === "importing" ? "Importando…" : scan.carta ? `Confirmar e importar ${included.length} base${included.length === 1 ? "" : "s"}` : `Criar ${included.length} base${included.length === 1 ? "" : "s"} sem histórico`}
+            {step === "importing" ? "Importando…" : scan.carta ? `Confirmar e importar ${included.length} base${included.length === 1 ? "" : "s"}` : `Criar ${included.length} base${included.length === 1 ? "" : "s"} com dados incompletos`}
           </button>
           <button className="btn" disabled={step === "importing"} onClick={() => { setStep("idle"); setScan(null); setRows([]); setFiles([]); }}>Cancelar</button>
         </div>

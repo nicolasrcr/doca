@@ -54,5 +54,8 @@ export function buildDayRow(opts: {
     divergentes: result.divergentes.length,
     pagamentos,
     tipos_produto: tiposProduto,
+    // false quando o dia foi salvo sem a Carta de porte: sem ela não há como saber o que foi entregue
+    carta_ok: result.hasEnt,
+    bairros: result.bairroStats,
   };
 }

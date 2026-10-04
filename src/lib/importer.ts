@@ -33,9 +33,15 @@ function modalDate(t: SheetTable): string {
   const counts = new Map<string, number>();
   for (const r of t.data) {
     const raw = (t.map.hr_saida >= 0 && r[t.map.hr_saida]) || (t.map.hr_chegada >= 0 && r[t.map.hr_chegada]) || "";
-    const d = raw ? parseDateTime(raw) : null;
-    if (!d) continue;
-    const k = isoLocal(d);
+    if (!raw) continue;
+    // a data escrita na planilha manda (evita deslocar o dia pelo fuso do navegador)
+    const lit = /^(\d{4}-\d{2}-\d{2})/.exec(raw.trim());
+    let k = lit ? lit[1] : "";
+    if (!k) {
+      const d = parseDateTime(raw);
+      if (!d) continue;
+      k = isoLocal(d);
+    }
     counts.set(k, (counts.get(k) || 0) + 1);
   }
   let best = "";
@@ -121,6 +127,7 @@ export async function scanJmsFiles(files: File[]): Promise<ImportScan> {
 export interface ImportItem {
   name: string;
   date: string;
+  meta?: number; // meta de entrega (%) escolhida pelo cliente para a base nova
   table: SheetTable;
 }
 

@@ -21,6 +21,7 @@ import Bases from "./pages/Bases";
 import Membros from "./pages/Membros";
 import Orgs from "./pages/Orgs";
 import Geral from "./pages/Geral";
+import Saude from "./pages/Saude";
 import Clientes from "./pages/Clientes";
 import Integracoes from "./pages/Integracoes";
 import Alertas from "./pages/Alertas";
@@ -86,6 +87,7 @@ function Shell() {
     membros: () => <Membros />,
     orgs: () => <Orgs />,
     geral: () => <Geral openScreen={nav.openScreen} />,
+    saude: () => <Saude openScreen={nav.openScreen} />,
     clientes: () => <Clientes />,
     integracoes: () => <Integracoes />,
     alertas: () => <Alertas openScreen={nav.openScreen} />,

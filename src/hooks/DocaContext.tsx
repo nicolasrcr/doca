@@ -565,6 +565,16 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   const generatePayout = useCallback(
     async (start: string, end: string) => {
       if (!curBase) return null;
+      const incompletos = history.filter((h) => h.data >= start && h.data <= end && h.carta_ok === false);
+      if (incompletos.length) {
+        toast(
+          `Não dá para gerar o fechamento: faltou a Carta de porte em ${incompletos.length} dia${incompletos.length === 1 ? "" : "s"} do período (${incompletos
+            .slice(0, 5)
+            .map((h) => h.data.split("-").reverse().slice(0, 2).join("/"))
+            .join(", ")}${incompletos.length > 5 ? "…" : ""}). Importe a Carta de porte e salve o dia de novo.`
+        );
+        return null;
+      }
       const byDriver = new Map<string, { deliveries: number; breakdown: PayoutBreakdownRow[]; pendente: boolean }>();
 
       for (const h of history) {
@@ -1012,7 +1022,12 @@ export function DocaProvider({ children }: { children: ReactNode }) {
           } else {
             const { data, error } = await supabase
               .from("bases")
-              .insert({ name: it.name.trim(), owner_id: user.id, ...(orgId ? { org_id: orgId } : {}) })
+              .insert({
+                name: it.name.trim(),
+                owner_id: user.id,
+                ...(it.meta && it.meta >= 50 && it.meta <= 100 ? { meta: it.meta } : {}),
+                ...(orgId ? { org_id: orgId } : {}),
+              })
               .select()
               .single();
             if (error) {
@@ -1025,9 +1040,8 @@ export function DocaProvider({ children }: { children: ReactNode }) {
           ids.set(key, b);
           firstBaseId = firstBaseId || b.id;
         }
-        // Sem a Carta de porte não há como saber o que foi entregue (o % ficaria zerado e o
-        // dashboard mostraria uma saúde falsa), então só criamos a base e não gravamos o dia.
-        if (!carta) continue;
+        // Sem a Carta de porte o dia é salvo marcado como incompleto (carta_ok = false): as telas
+        // mostram o alerta de dado faltando em vez de um 0% enganoso.
         const result = computeGroup(it.table, carta);
         if (!result) continue;
         const row = buildDayRow({ baseId: b.id, data: it.date, meta: b.meta, salvoPor: user.email || "", result });
