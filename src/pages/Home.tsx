@@ -9,6 +9,41 @@ import SLAAlertModal from "../components/SLAAlertModal";
 import type { ActiveScreen } from "../hooks/useNav";
 import { ImportStrip } from "../components/ImportDialog";
 import { CatIcon } from "../components/Icons";
+import { PlanoBanner } from "./Planos";
+
+// Passos para quem acabou de entrar. Some sozinho quando tudo está feito, ou se a pessoa dispensar.
+function PrimeirosPassos({ openScreen }: { openScreen: (id: ActiveScreen) => void }) {
+  const { curBase, history, members, drivers } = useDoca();
+  const chave = curBase ? `doca.passos.${curBase.id}` : "";
+  const [oculto, setOculto] = useState(() => { try { return !!chave && localStorage.getItem(chave) === "1"; } catch { return false; } });
+  if (!curBase || oculto) return null;
+  const passos: { ok: boolean; txt: string; ir?: ActiveScreen }[] = [
+    { ok: true, txt: "Criar a base" },
+    { ok: history.length > 0, txt: "Importar a primeira planilha do JMS" },
+    { ok: curBase.meta !== 95 || !!curBase.city, txt: "Conferir a meta de entrega e a cidade da base", ir: "ajustes" },
+    { ok: drivers.length > 0, txt: "Cadastrar os motoristas (para unir apelidos e definir valores)", ir: "motoristas" },
+    { ok: members.length > 1, txt: "Convidar a equipe", ir: "membros" },
+  ];
+  if (passos.every((p) => p.ok)) return null;
+  const feitos = passos.filter((p) => p.ok).length;
+  return (
+    <div className="infobox" style={{ margin: "0 16px 1rem" }}>
+      <div className="row">
+        <b>Primeiros passos ({feitos} de {passos.length})</b>
+        <span className="spacer"></span>
+        <button className="btn small" onClick={() => { try { localStorage.setItem(chave, "1"); } catch { /* ignore */ } setOculto(true); }}>Dispensar</button>
+      </div>
+      <ul style={{ listStyle: "none", padding: 0, margin: ".4rem 0 0" }}>
+        {passos.map((p) => (
+          <li key={p.txt} style={{ padding: ".15rem 0" }}>
+            {p.ok ? "✓ " : "○ "}{p.txt}
+            {!p.ok && p.ir && <> · <button className="btn small" onClick={() => openScreen(p.ir!)}>Abrir</button></>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export default function Home({ openScreen }: { openScreen: (id: ActiveScreen) => void }) {
   const { curBase, result, history, occRows, payouts, drivers, bases, dayDate } = useDoca();
@@ -91,6 +126,8 @@ export default function Home({ openScreen }: { openScreen: (id: ActiveScreen) =>
         }}
       />
 
+      <div style={{ padding: "0 16px" }}><PlanoBanner /></div>
+      <PrimeirosPassos openScreen={openScreen} />
       <div style={{ padding: "0 16px" }}>
         <ImportStrip
           titulo={history.length ? "Atualizar com as planilhas de hoje" : "Comece aqui: arraste as planilhas do JMS"}

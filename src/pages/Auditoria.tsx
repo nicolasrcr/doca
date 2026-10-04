@@ -22,6 +22,11 @@ const ACOES: Record<string, string> = {
   qr_troca_motorista: "Confirmou troca de motorista na conferência QR",
   resumo_whatsapp: "Gerou resumo para WhatsApp",
   imagem_ranking: "Gerou a imagem do ranking",
+  acao_criada: "Criou uma ação no plano",
+  acao_concluida: "Concluiu uma ação do plano",
+  acao_reaberta: "Reabriu uma ação do plano",
+  link_motorista_criado: "Criou um link de motorista",
+  link_motorista_revogado: "Desativou links de motorista",
 };
 
 const quando = (iso: string) => new Date(iso).toLocaleString("pt-BR");

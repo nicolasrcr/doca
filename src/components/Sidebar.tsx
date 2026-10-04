@@ -4,6 +4,8 @@ import type { ActiveScreen } from "../hooks/useNav";
 import { useAuth } from "../hooks/useAuth";
 import DocaLogo from "./DocaLogo";
 import { CatIcon } from "./Icons";
+import { SenhaForm } from "./Senha";
+import { useState } from "react";
 
 const ease = [0.2, 0.8, 0.2, 1] as const;
 
@@ -23,6 +25,7 @@ export default function Sidebar({
   onHome?: () => void;
 }) {
   const { user } = useAuth();
+  const [trocando, setTrocando] = useState(false);
   const initial = (user?.email || "?").trim().charAt(0).toUpperCase();
 
   return (
@@ -98,7 +101,13 @@ export default function Sidebar({
           >
             {user?.email}
           </span>
+          <button className="btn small" style={{ marginLeft: "auto" }} onClick={() => setTrocando((v) => !v)}>Trocar senha</button>
         </div>
+        {trocando && (
+          <div className="panel" style={{ margin: ".5rem" }}>
+            <SenhaForm onDone={() => setTrocando(false)} />
+          </div>
+        )}
       </aside>
     </>
   );

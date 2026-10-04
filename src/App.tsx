@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "./hooks/useAuth";
 import { DocaProvider, useDoca } from "./hooks/DocaContext";
@@ -6,6 +6,7 @@ import { ToastProvider } from "./hooks/useToast";
 import { DialogProvider } from "./hooks/useDialog";
 import { useNav } from "./hooks/useNav";
 import Landing from "./components/Landing";
+import { DefinirSenhaPage } from "./components/Senha";
 import ImportWizard from "./components/ImportWizard";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
@@ -30,6 +31,10 @@ import Alertas from "./pages/Alertas";
 import Cabine from "./pages/Cabine";
 import QrConf from "./pages/QrConf";
 import Auditoria from "./pages/Auditoria";
+import PlanoDeAcao from "./pages/PlanoDeAcao";
+import Planos from "./pages/Planos";
+import Rastreador from "./pages/Rastreador";
+import MotoristaPublico from "./pages/MotoristaPublico";
 import PacotesParados from "./pages/PacotesParados";
 import Pendencias from "./pages/Pendencias";
 import Precos from "./pages/Precos";
@@ -97,6 +102,9 @@ function ShellBody({ nav }: { nav: Nav }) {
     conferencia: () => <Conferencia />,
     qrconf: () => <QrConf />,
     auditoria: () => <Auditoria />,
+    plano: () => <PlanoDeAcao />,
+    planos: () => <Planos />,
+    rastreador: () => <Rastreador />,
     parados: () => <PacotesParados />,
     pendencias: () => <Pendencias openScreen={nav.openScreen} />,
     fechamento: () => <Fechamento />,
@@ -155,13 +163,25 @@ function ShellBody({ nav }: { nav: Nav }) {
 }
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, precisaSenha } = useAuth();
+  const [senhaOk, setSenhaOk] = useState(false);
+
+  // link do motorista (?m=<código>): página pública de leitura, sem login
+  const tokenMotorista = new URLSearchParams(window.location.search).get("m");
+  if (tokenMotorista && /^[0-9a-f-]{36}$/i.test(tokenMotorista)) return <MotoristaPublico token={tokenMotorista} />;
 
   if (loading) return null;
   if (!user)
     return (
       <ToastProvider>
         <Landing />
+      </ToastProvider>
+    );
+
+  if (precisaSenha && !senhaOk)
+    return (
+      <ToastProvider>
+        <DefinirSenhaPage onDone={() => setSenhaOk(true)} />
       </ToastProvider>
     );
 

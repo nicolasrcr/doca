@@ -11,6 +11,15 @@ export interface Check {
   fix?: { rotulo: string; horas: number }; // corrigir deslocando todos os horários
 }
 
+// Um dia vira registro próprio quando tem volume real: pelo menos 50 linhas e 25% do dia mais cheio.
+// Sobras do dia anterior (pacotes retidos) ficam de fora, para não sobrescrever um dia já salvo.
+export const DIA_MIN_LINHAS = 50;
+export const DIA_MIN_FRACAO = 0.25;
+export const diasQualificados = (cont: Map<string, number>): string[] => {
+  const max = Math.max(0, ...cont.values());
+  return [...cont.entries()].filter(([, n]) => n >= DIA_MIN_LINHAS && n >= max * DIA_MIN_FRACAO).map(([d]) => d).sort();
+};
+
 const hojeISO = () => {
   const d = new Date();
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -148,7 +157,15 @@ export function validarTabelas(bip: SheetTable[], carta: SheetTable | null, opts
     const ord = [...dias.entries()].sort((a, b) => b[1] - a[1]);
     const total = ord.reduce((a, [, n]) => a + n, 0);
     const outros = total - ord[0][1];
-    if (outros / total > 0.05) {
+    const reais = diasQualificados(dias);
+    if (reais.length > 1) {
+      checks.push({
+        id: "dias",
+        nivel: "ok",
+        titulo: `O arquivo cobre ${reais.length} dias e será separado em um registro por dia`,
+        detalhe: `Dias: ${reais.map((d) => `${dia(d)} (${nTxt(dias.get(d) || 0)} linhas)`).join(", ")}. Pacotes de dias com pouco volume entram no dia mais próximo.`,
+      });
+    } else if (outros / total > 0.05) {
       checks.push({
         id: "dias",
         nivel: "aviso",

@@ -3,6 +3,17 @@ import { useDoca } from "../hooks/DocaContext";
 import { fmtN, fmtPct, todayISO } from "../lib/format";
 import { analisarBase, type Area, type Farol, type Insight } from "../lib/insights";
 import type { ActiveScreen } from "../hooks/useNav";
+import { useAuth } from "../hooks/useAuth";
+import { useToast } from "../hooks/useToast";
+import { pctUltimos7 } from "../lib/acoes";
+import { criarAcao } from "../lib/acoesDb";
+import { sugerirRedistribuicao } from "../lib/rotas";
+
+const shiftISO = (iso: string, d: number) => {
+  const x = new Date(iso + "T12:00:00");
+  x.setDate(x.getDate() + d);
+  return x.toISOString().slice(0, 10);
+};
 
 const FAROL_LABEL: Record<Farol, string> = { verde: "Verde", amarelo: "Amarelo", vermelho: "Vermelho", sem_dados: "Sem dados" };
 const FAROL_COR: Record<Farol, string> = { verde: "var(--ok)", amarelo: "var(--warn)", vermelho: "var(--bad)", sem_dados: "var(--muted)" };
@@ -22,7 +33,7 @@ export function FarolDot({ farol, size = 12 }: { farol: Farol; size?: number }) 
   return <span aria-label={FAROL_LABEL[farol]} style={{ display: "inline-block", width: size, height: size, borderRadius: "50%", background: FAROL_COR[farol], marginRight: ".4rem", verticalAlign: "middle" }} />;
 }
 
-function InsightCard({ i }: { i: Insight }) {
+function InsightCard({ i, onPlan }: { i: Insight; onPlan?: (i: Insight) => void }) {
   return (
     <div className="panel" style={{ marginBottom: ".6rem", borderLeft: `4px solid ${i.nivel === "critico" ? "var(--bad)" : i.nivel === "aviso" ? "var(--warn)" : "var(--ok)"}` }}>
       <div className="row">
@@ -32,16 +43,29 @@ function InsightCard({ i }: { i: Insight }) {
       </div>
       <p className="muted small" style={{ margin: ".25rem 0" }}>{i.detalhe}</p>
       {i.acao && <p style={{ margin: ".25rem 0 0" }}><b>O que fazer:</b> {i.acao}</p>}
+      {onPlan && <button className="btn small" style={{ marginTop: ".4rem" }} onClick={() => onPlan(i)}>＋ Colocar no plano de ação</button>}
     </div>
   );
 }
 
 export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) => void }) {
-  const { curBase, history } = useDoca();
+  const { curBase, history, canEdit, audit } = useDoca();
+  const { user } = useAuth();
+  const toast = useToast();
   const [periodo, setPeriodo] = useState(7);
 
   const s = useMemo(() => (curBase ? analisarBase(history, curBase, periodo, todayISO()) : null), [curBase, history, periodo]);
   if (!curBase || !s) return null;
+
+  const sugestoes = sugerirRedistribuicao(history.filter((d) => d.data >= shiftISO(todayISO(), -(periodo - 1))), (curBase.meta ?? 95) / 100);
+  const noPlano = async (i: Insight) => {
+    if (!user) return;
+    const ult = history.length ? history[history.length - 1].data : todayISO();
+    const erro = await criarAcao(curBase.id, user.id, { titulo: i.titulo, detalhe: `${i.detalhe}${i.acao ? " | O que fazer: " + i.acao : ""}`.slice(0, 1000), origem: i.id, baseline: pctUltimos7(history, ult) });
+    if (erro) { toast("Não consegui salvar: " + erro); return; }
+    void audit("acao_criada", { titulo: i.titulo, origem: i.id });
+    toast("Adicionado ao Plano de ação");
+  };
 
   const meta = curBase.meta ?? 95;
   const seta = s.tendencia === "subindo" ? "▲" : s.tendencia === "caindo" ? "▼" : s.tendencia === "estavel" ? "▬" : "";
@@ -104,7 +128,7 @@ export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) =
         {s.prioridades.length === 0 ? (
           <div className="okbox">Nenhuma prioridade crítica no período. Continue acompanhando o farol.</div>
         ) : (
-          s.prioridades.map((i, n) => (<div key={i.id}><div className="small muted">Prioridade {n + 1}</div><InsightCard i={i} /></div>))
+          s.prioridades.map((i, n) => (<div key={i.id}><div className="small muted">Prioridade {n + 1}</div><InsightCard i={i} onPlan={canEdit ? noPlano : undefined} /></div>))
         )}
       </div>
 
@@ -116,12 +140,25 @@ export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) =
           return (
             <div key={a} style={{ marginBottom: "1rem" }}>
               <h4 style={{ margin: ".4rem 0" }}>{AREA_LABEL[a]}</h4>
-              {list.map((i) => (<InsightCard key={i.id} i={i} />))}
+              {list.map((i) => (<InsightCard key={i.id} i={i} onPlan={canEdit ? noPlano : undefined} />))}
             </div>
           );
         })}
         {s.insights.length === 0 && <p className="muted">Sem observações para o período.</p>}
       </div>
+
+      {sugestoes.length > 0 && (
+        <div className="panel" style={{ marginBottom: "1rem" }}>
+          <h3>Sugestão de redistribuição de rotas</h3>
+          <p className="muted small">Bairros abaixo da meta em que um motorista com resultado melhor poderia assumir parte da entrega. É uma estimativa feita só com os números do período: o gerente decide, conhecendo a rua, o veículo e a carga de cada um.</p>
+          {sugestoes.map((r) => (
+            <div key={r.bairro} className="panel" style={{ marginBottom: ".5rem" }}>
+              <b>{r.bairro}</b>: passar de {r.de} para {r.para}
+              <div className="small muted">{r.motivo} Pode render cerca de {r.ganho} entregas a mais no período ({r.pacotes} pacotes do bairro hoje com {r.de}).</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {s.motoristas.length > 0 && (
         <div className="panel" style={{ marginBottom: "1rem" }}>

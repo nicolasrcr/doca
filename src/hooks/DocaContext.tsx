@@ -984,9 +984,22 @@ export function DocaProvider({ children }: { children: ReactNode }) {
         return;
       }
       await Promise.all([loadAccessRequests(), loadAllowedEmails()]);
-      toast(aprovar ? "Aprovado: o e-mail já pode criar a conta" : "Pedido recusado");
+      if (!aprovar) {
+        toast("Pedido recusado");
+        return;
+      }
+      // avisa a pessoa por e-mail (convite para criar a senha); se falhar, a aprovação continua valendo
+      const email = accessRequests.find((r) => r.id === id)?.email;
+      let aviso = "Aprovado: o e-mail já pode criar a conta";
+      if (email) {
+        const { data, error: eMail } = await supabase.functions.invoke("notificar-aprovacao", { body: { email } });
+        if (eMail) aviso += ". Não consegui enviar o e-mail de aviso: avise a pessoa por conta própria.";
+        else if (data?.status === "ja_cadastrado") aviso += " (a pessoa já tem conta).";
+        else aviso = "Aprovado: enviamos um e-mail para a pessoa criar a senha";
+      }
+      toast(aviso);
     },
-    [toast, loadAccessRequests, loadAllowedEmails]
+    [toast, loadAccessRequests, loadAllowedEmails, accessRequests]
   );
 
   const inviteToOrg = useCallback(

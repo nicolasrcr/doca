@@ -2,7 +2,7 @@ import { norm, todayISO } from "./format";
 import { detectReportType, prepare, readRows } from "./parse";
 import { mae, parseDateTime, recompute } from "./compute";
 import type { DayResult, Driver, SheetTable } from "./types";
-import { validarTabelas, type Check } from "./validate";
+import { validarTabelas, diasQualificados, type Check } from "./validate";
 import { acharDivergencias, type Divergencia } from "./divergencias";
 
 export const BASE_KEYS = ["cod", "ent", "prob", "base", "distrito", "hr_saida", "hr_chegada", "retencao", "tipo_produto", "peso", "assinante", "origem", "bloqueado", "hr_problema"];
@@ -57,6 +57,35 @@ function modalDate(t: SheetTable): string {
   let n = 0;
   for (const [k, v] of counts) if (v > n) { best = k; n = v; }
   return best || todayISO();
+}
+
+// Dia (AAAA-MM-DD) de uma linha: a data escrita na planilha manda (evita deslocar o dia pelo fuso do navegador).
+function diaDaLinha(t: SheetTable, r: string[]): string {
+  const raw = (t.map.hr_saida >= 0 && r[t.map.hr_saida]) || (t.map.hr_chegada >= 0 && r[t.map.hr_chegada]) || "";
+  if (!raw) return "";
+  const lit = /^(\d{4}-\d{2}-\d{2})/.exec(raw.trim());
+  if (lit) return lit[1];
+  const d = parseDateTime(raw);
+  return d ? isoLocal(d) : "";
+}
+
+const distDias = (a: string, b: string) => Math.abs(new Date(a + "T12:00:00").getTime() - new Date(b + "T12:00:00").getTime());
+
+// Arquivo com vários dias de volume real vira um registro por dia; senão, fica tudo no dia predominante.
+export function dividirPorDia(t: SheetTable): [string, SheetTable][] {
+  const cont = new Map<string, number>();
+  const dias = t.data.map((r) => diaDaLinha(t, r));
+  for (const d of dias) if (d) cont.set(d, (cont.get(d) || 0) + 1);
+  const reais = diasQualificados(cont);
+  if (reais.length < 2) return [[modalDate(t), t]];
+  const out = new Map<string, string[][]>(reais.map((d) => [d, []]));
+  const modal = reais.reduce((a, b) => ((cont.get(b) || 0) > (cont.get(a) || 0) ? b : a));
+  t.data.forEach((r, i) => {
+    const d = dias[i];
+    const alvo = !d ? modal : out.has(d) ? d : reais.reduce((a, b) => (distDias(b, d) < distDias(a, d) ? b : a));
+    out.get(alvo)!.push(r);
+  });
+  return reais.map((d) => [d, { ...t, data: out.get(d)! }] as [string, SheetTable]);
 }
 
 export function computeGroup(table: SheetTable, carta: SheetTable | null): DayResult | null {
@@ -187,15 +216,17 @@ export async function scanJmsFiles(files: File[], opts: ScanOptions = {}): Promi
     for (const t of mergeTables(tables)) {
       // uma tabela pode cobrir vários dias: separa pelas datas mais frequentes não é confiável,
       // então cada base entra com o dia predominante; o cliente confirma/edita a data na prévia.
-      const res = computeGroup(t, carta);
-      groups.push({
-        id: `${k}|${groups.length}`,
-        name,
-        date: modalDate(t),
-        table: t,
-        total: res?.tot.t ?? 0,
-        entregues: res?.tot.e ?? 0,
-      });
+      for (const [data, parte] of dividirPorDia(t)) {
+        const res = computeGroup(parte, carta);
+        groups.push({
+          id: `${k}|${groups.length}`,
+          name,
+          date: data,
+          table: parte,
+          total: res?.tot.t ?? 0,
+          entregues: res?.tot.e ?? 0,
+        });
+      }
     }
   }
   groups.sort((a, b) => b.total - a.total);

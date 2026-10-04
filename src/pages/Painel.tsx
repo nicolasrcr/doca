@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
 import { brDate, fmtN, fmtPct, todayISO } from "../lib/format";
 import { analisarBase, LIMITES } from "../lib/insights";
-import type { Base, DayRecord } from "../lib/types";
+import type { Base, DayRecord, Driver } from "../lib/types";
 import type { ActiveScreen } from "../hooks/useNav";
 import {
   ChartCard, ColumnChart, DataTable, Donut, HBars, LineChart, StatTile, TipRow, TipTitle, VizRoot, topComOutros,
@@ -10,6 +10,9 @@ import {
 } from "../components/viz/Viz";
 import { useImport } from "../components/ImportDialog";
 import { agruparMotivos } from "../lib/taxonomia";
+import { compararMesmoDia, metaDoMotorista } from "../lib/metas";
+import { gerarRelatorioSemanal } from "../lib/relatorioPdf";
+import { downloadBlob, useToast } from "../hooks/useToast";
 import { preverFechamentoMes } from "../lib/previsao";
 
 const shiftDay = (iso: string, d: number) => {
@@ -33,9 +36,10 @@ const agg = (days: DayRecord[]): Agg => ({
   colT: days.reduce((a, d) => a + (d.coleta_total || 0), 0),
 });
 
-export function PainelView({ base, history, openScreen, onImport }: {
-  base: Base; history: DayRecord[]; openScreen?: (id: ActiveScreen) => void; onImport?: () => void;
+export function PainelView({ base, history, openScreen, onImport, drivers = [] }: {
+  base: Base; history: DayRecord[]; openScreen?: (id: ActiveScreen) => void; onImport?: () => void; drivers?: Driver[];
 }) {
+  const toast = useToast();
   const [periodo, setPeriodo] = useState(7);
   const hoje = todayISO();
   const meta = (base.meta ?? 95) / 100;
@@ -101,8 +105,8 @@ export function PainelView({ base, history, openScreen, onImport }: {
     .sort((x, y) => y.t - x.t).slice(0, 8)
     .sort((x, y) => x.pct - y.pct)
     .map((m) => ({
-      label: m.nome, value: m.pct, text: fmtPct(m.pct), destaque: m.pct < alerta,
-      tip: <><TipTitle>{m.nome}</TipTitle><TipRow label="Entregues" value={fmtPct(m.pct)} /><TipRow label="Pacotes" value={`${fmtN(m.e)} de ${fmtN(m.t)}`} /><TipRow label="Dias abaixo do alerta" value={String(m.diasAbaixo)} /></>,
+      label: m.nome, value: m.pct, text: fmtPct(m.pct), destaque: m.pct < alerta || (!!drivers.find((x) => x.name === m.nome)?.meta && m.pct < metaDoMotorista(drivers.find((x) => x.name === m.nome), base)),
+      tip: <><TipTitle>{m.nome}</TipTitle><TipRow label="Entregues" value={fmtPct(m.pct)} /><TipRow label="Pacotes" value={`${fmtN(m.e)} de ${fmtN(m.t)}`} /><TipRow label="Dias abaixo do alerta" value={String(m.diasAbaixo)} />{drivers.find((x) => x.name === m.nome)?.meta ? <TipRow label="Meta própria" value={`${drivers.find((x) => x.name === m.nome)!.meta}%`} /> : null}</>,
     }));
   const soma = (campo: "motivos" | "tipos_produto" | "pagamentos") => {
     const acc: Record<string, number> = {};
@@ -114,6 +118,7 @@ export function PainelView({ base, history, openScreen, onImport }: {
   const motivos = topComOutros(categorias.map((c) => [c.categoria, c.total] as [string, number]));
   const motivosTabela = categorias.flatMap((c) => c.motivos.map(([m, n]) => [c.categoria, m, fmtN(n)]));
   const previsao = preverFechamentoMes(history, hoje, meta);
+  const semana = compararMesmoDia(history, base);
   const perdidosTotal = s.bairros.reduce((a, b) => a + Math.round(b.total * (1 - b.pct)), 0);
   const topBairros: HBarDatum[] = s.bairros.slice(0, 8).map((b) => {
     const perd = Math.round(b.total * (1 - b.pct));
@@ -143,6 +148,7 @@ export function PainelView({ base, history, openScreen, onImport }: {
               <option value={14}>Últimos 14 dias</option>
               <option value={30}>Últimos 30 dias</option>
             </select>
+            <button className="btn" onClick={async () => { try { downloadBlob(`relatorio-semanal-${base.name}-${hoje}.pdf`, await gerarRelatorioSemanal(base, history)); } catch { toast("Não consegui gerar o PDF agora."); } }}>⬇ Relatório semanal (PDF)</button>
             {onImport && <button className="btn primary" onClick={onImport}>⬆ Importar planilhas</button>}
           </div>
         </div>
@@ -219,7 +225,7 @@ export function PainelView({ base, history, openScreen, onImport }: {
               </div>
               <div className="viz-span-6">
                 <ChartCard title="Motoristas · % entregue" caption="Os de maior volume; a linha marca a meta"
-                  legend={<><span><i style={{ background: "var(--v1)" }} />Na meta ou acima do alerta</span><span><i style={{ background: "var(--v2)" }} />Abaixo do alerta</span></>}
+                  legend={<><span><i style={{ background: "var(--v1)" }} />Na meta ou acima do alerta</span><span><i style={{ background: "var(--v2)" }} />Abaixo do alerta ou da meta própria</span></>}
                   table={<DataTable cols={["Motorista", "% entregue", "Pacotes", "Dias abaixo do alerta"]} rows={s.motoristas.map((m) => [m.nome, fmtPct(m.pct), fmtN(m.t), m.diasAbaixo])} />}>
                   {motoristas.length ? <HBars name="Percentual entregue por motorista" data={motoristas} refValue={meta} refLabel={`meta ${Math.round(meta * 100)}%`} /> : <p className="muted">Sem motoristas com volume suficiente no período.</p>}
                 </ChartCard>
@@ -249,6 +255,20 @@ export function PainelView({ base, history, openScreen, onImport }: {
                 </div>
               )}
             </div>
+
+            {semana && (
+              <div className="viz-grid">
+                <div className="viz-span-12" style={{ gridColumn: "1 / -1" }}>
+                  <ChartCard title={`${semana.nomeDia}: mesmo dia da semana`} caption={`Último dia salvo (${brDate(semana.data)}) contra a média das ${semana.n} ${semana.nomeDia.toLowerCase()}s anteriores`}>
+                    <p style={{ margin: 0, fontSize: "1.1rem" }}>
+                      <b>{fmtPct(semana.pct)}</b> contra <b>{fmtPct(semana.media)}</b> de média:{" "}
+                      <span style={{ color: semana.delta >= 0 ? "var(--ok)" : "var(--bad)", fontWeight: 600 }}>{semana.delta >= 0 ? "▲ " : "▼ "}{pp(semana.delta)}</span>.
+                      {" "}Meta desse dia: {fmtPct(semana.metaDia)} ({semana.pct >= semana.metaDia ? "batida" : "não batida"}).
+                    </p>
+                  </ChartCard>
+                </div>
+              </div>
+            )}
 
             {(previsao || topBairros.length > 0) && (
               <div className="viz-grid">
@@ -290,9 +310,9 @@ export function PainelView({ base, history, openScreen, onImport }: {
 }
 
 export default function Painel({ openScreen }: { openScreen: (id: ActiveScreen) => void }) {
-  const { curBase, history } = useDoca();
+  const { curBase, history, drivers } = useDoca();
   const imp = useImport();
   if (!curBase) return null;
-  return <PainelView base={curBase} history={history} openScreen={openScreen} onImport={() => imp.open()} />;
+  return <PainelView base={curBase} history={history} openScreen={openScreen} onImport={() => imp.open()} drivers={drivers} />;
 }
 
