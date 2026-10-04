@@ -5,10 +5,14 @@ import { scanJmsFiles, type ImportScan } from "../lib/importer";
 
 interface Row {
   id: string;
+  key: string; // identifica o grupo achado na planilha, para preservar edições ao reler
   include: boolean;
   name: string;
   date: string;
 }
+
+const fileId = (f: File) => `${f.name}|${f.size}|${f.lastModified}`;
+const groupKey = (name: string, date: string) => `${norm(name)}|${date}`;
 
 type Step = "idle" | "scanning" | "preview" | "importing" | "done";
 
@@ -17,6 +21,7 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
   const [step, setStep] = useState<Step>("idle");
   const [over, setOver] = useState(false);
   const [scan, setScan] = useState<ImportScan | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [error, setError] = useState("");
   const [orgId, setOrgId] = useState("");
@@ -35,27 +40,59 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
   const offerCompany = newNames.size >= 2 && !hasOwnOrg && !isSuperAdmin;
   const missingName = included.some((r) => !r.name.trim());
 
-  const handleFiles = async (list: FileList | File[]) => {
-    const files = Array.from(list);
-    if (!files.length) return;
+  // Lê (ou relê) todos os arquivos já enviados. As edições que o cliente fez na prévia
+  // (nome, dia, desmarcar) são preservadas para os grupos que continuam existindo.
+  const readAll = async (list: File[]) => {
     setError("");
-    setStep("scanning");
+    if (!list.length) {
+      setScan(null);
+      setRows([]);
+      setStep("idle");
+      return;
+    }
+    const wasPreview = step === "preview";
+    if (!wasPreview) setStep("scanning");
     try {
-      const res = await scanJmsFiles(files);
+      const res = await scanJmsFiles(list);
       if (!res.groups.length) {
         setError(
-          "Não encontrei pacotes nessas planilhas. Use o relatório “Monitoramento de bipagem de entrega” do JMS (e, se tiver, a “Carta de porte”)."
+          "Não encontrei pacotes nessas planilhas. Use o relatório “Monitoramento de bipagem de entrega” do JMS (e, se tiver, a “Carta de porte”)." +
+            (res.ignored.length ? ` Ignorei: ${res.ignored.join("; ")}` : "")
         );
+        setScan(null);
+        setRows([]);
         setStep("idle");
         return;
       }
+      const prev = new Map(rows.map((r) => [r.key, r]));
       setScan(res);
-      setRows(res.groups.map((g) => ({ id: g.id, include: true, name: g.name, date: g.date })));
+      setRows(
+        res.groups.map((g) => {
+          const key = groupKey(g.name, g.date);
+          const old = prev.get(key);
+          return { id: g.id, key, include: old ? old.include : true, name: old ? old.name : g.name, date: old ? old.date : g.date };
+        })
+      );
       setStep("preview");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não consegui ler as planilhas");
-      setStep("idle");
+      setStep(wasPreview ? "preview" : "idle");
     }
+  };
+
+  const handleFiles = async (incoming: FileList | File[]) => {
+    const add = Array.from(incoming);
+    if (!add.length) return;
+    const have = new Set(files.map(fileId));
+    const next = [...files, ...add.filter((f) => !have.has(fileId(f)))];
+    setFiles(next);
+    await readAll(next);
+  };
+
+  const removeFile = async (f: File) => {
+    const next = files.filter((x) => fileId(x) !== fileId(f));
+    setFiles(next);
+    await readAll(next);
   };
 
   const confirm = async () => {
@@ -95,9 +132,22 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
 
   if ((step === "preview" || step === "importing") && scan) {
     return (
-      <div className="panel">
+      <div className="panel" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); if (step === "preview") handleFiles(e.dataTransfer.files); }}>
         <h3>Encontrei {scan.groups.length === 1 ? "1 base" : `${scan.groups.length} bases`} nas planilhas</h3>
         <p className="muted small">Confira, ajuste os nomes e as datas se precisar, e confirme. Nada é criado antes da sua confirmação.</p>
+        <div className="row" style={{ flexWrap: "wrap", gap: ".4rem", margin: ".4rem 0" }}>
+          {files.map((f) => (
+            <span key={fileId(f)} className="badge" style={{ display: "inline-flex", alignItems: "center", gap: ".4rem" }}>
+              {f.name}
+              <button type="button" aria-label={`Remover ${f.name}`} disabled={step === "importing"} onClick={() => removeFile(f)} style={{ background: "none", border: 0, cursor: "pointer", color: "inherit" }}>✕</button>
+            </span>
+          ))}
+          <label className="btn small" style={{ position: "relative", cursor: "pointer" }}>
+            + Adicionar mais arquivos
+            <input type="file" multiple accept=".xlsx,.xls,.csv" disabled={step === "importing"} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}
+              onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }} />
+          </label>
+        </div>
         {scan.ignored.length > 0 && (
           <div className="warnbox">Ignorei {scan.ignored.length} arquivo(s) que não parecem relatórios do JMS: {scan.ignored.join(", ")}</div>
         )}
@@ -167,7 +217,7 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
           <button className="btn primary" disabled={step === "importing" || !included.length || missingName} onClick={confirm}>
             {step === "importing" ? "Importando…" : scan.carta ? `Confirmar e importar ${included.length} base${included.length === 1 ? "" : "s"}` : `Criar ${included.length} base${included.length === 1 ? "" : "s"} sem histórico`}
           </button>
-          <button className="btn" disabled={step === "importing"} onClick={() => { setStep("idle"); setScan(null); }}>Cancelar</button>
+          <button className="btn" disabled={step === "importing"} onClick={() => { setStep("idle"); setScan(null); setRows([]); setFiles([]); }}>Cancelar</button>
         </div>
       </div>
     );
