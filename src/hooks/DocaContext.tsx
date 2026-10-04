@@ -64,7 +64,7 @@ interface DocaState {
   importBases: (
     items: ImportItem[],
     carta: ImportSheet | null,
-    opts: { orgId?: string | null; companyName?: string | null }
+    opts: { orgId?: string | null; companyName?: string | null; arquivos?: { nome: string; tamanho: number; hash: string }[]; divergencias?: number }
   ) => Promise<{ created: number; existing: number; days: number; firstBaseId: string | null } | null>;
   createOrganization: (name: string, adminEmail: string) => Promise<boolean>;
   inviteOrgMember: (orgId: string, email: string, role: OrgRole) => Promise<boolean>;
@@ -92,6 +92,7 @@ interface DocaState {
   deleteDriver: (id: string) => Promise<void>;
   saveDay: () => Promise<boolean>;
   deleteDay: (data: string) => Promise<void>;
+  audit: (action: string, detail?: Record<string, unknown>, baseId?: string) => Promise<void>;
   saveOccurrence: (row: Occurrence) => Promise<void>;
   occRows: () => Occurrence[];
   generatePayout: (start: string, end: string) => Promise<Payout | null>;
@@ -146,13 +147,34 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   );
   const coletaResult = useMemo(() => computeColeta(sheetColeta), [sheetColeta]);
 
+  // Registro de auditoria: quem fez o quê. Nunca bloqueia a ação; se falhar, só segue.
+  const audit = useCallback(
+    async (action: string, detail: Record<string, unknown> = {}, baseId?: string) => {
+      const id = baseId || curBase?.id;
+      if (!id || !user) return;
+      await supabase.from("audit_logs").insert({ base_id: id, user_id: user.id, user_email: user.email || "", action, detail });
+    },
+    [curBase?.id, user]
+  );
+
   const loadBases = useCallback(async () => {
     const { data, error } = await supabase.from("bases").select("*").order("name");
     if (error) {
+      // sem internet: usa a última lista de bases guardada neste aparelho (a Conferência QR continua funcionando)
+      try {
+        const raw = localStorage.getItem("doca.bases.v1");
+        if (raw && !navigator.onLine) {
+          setBases(JSON.parse(raw) as Base[]);
+          toast("Sem internet: usando os dados guardados neste aparelho.");
+          setReady(true);
+          return;
+        }
+      } catch { /* sem cache */ }
       toast("Não consegui carregar as bases: " + error.message);
       setReady(true);
       return;
     }
+    try { localStorage.setItem("doca.bases.v1", JSON.stringify(data || [])); } catch { /* cheio */ }
     setBases((data as Base[]) || []);
     setReady(true);
   }, [toast]);
@@ -193,6 +215,7 @@ export function DocaProvider({ children }: { children: ReactNode }) {
       loadBases();
       loadOrgs();
     } else {
+      try { localStorage.removeItem("doca.bases.v1"); } catch { /* ignore */ }
       setBases([]);
       setOrgs([]);
       setOrgRoles({});
@@ -451,6 +474,7 @@ export function DocaProvider({ children }: { children: ReactNode }) {
       toast("Não consegui salvar o dia: " + error.message);
       return false;
     }
+    void audit("dia_salvo", { data: dayDate, total: result.tot.t, entregues: result.tot.e });
     await loadHistory(curBase.id);
     toast(`Dia ${dayDate.split("-").reverse().join("/")} salvo no histórico`);
 
@@ -482,7 +506,7 @@ export function DocaProvider({ children }: { children: ReactNode }) {
       }
     }
     return true;
-  }, [curBase, result, coletaResult, dayDate, user, toast, loadHistory]);
+  }, [curBase, result, coletaResult, dayDate, user, toast, loadHistory, audit]);
 
   const deleteDay = useCallback(
     async (data: string) => {
@@ -492,10 +516,11 @@ export function DocaProvider({ children }: { children: ReactNode }) {
         toast("Não consegui apagar: " + error.message);
         return;
       }
+      void audit("dia_apagado", { data });
       await loadHistory(curBase.id);
       toast("Registro apagado");
     },
-    [curBase, toast, loadHistory]
+    [curBase, toast, loadHistory, audit]
   );
 
   const occRows = useCallback((): Occurrence[] => {
@@ -715,9 +740,10 @@ export function DocaProvider({ children }: { children: ReactNode }) {
         toast("Não consegui salvar: " + error.message);
         return;
       }
+      void audit("fechamento_" + status, { payoutId });
       if (curBase) await loadPayouts(curBase.id);
     },
-    [user, curBase, toast, loadPayouts]
+    [user, curBase, toast, loadPayouts, audit]
   );
 
   const deletePayout = useCallback(
@@ -727,9 +753,10 @@ export function DocaProvider({ children }: { children: ReactNode }) {
         toast("Não consegui excluir: " + error.message);
         return;
       }
+      void audit("fechamento_excluido", { payoutId });
       if (curBase) await loadPayouts(curBase.id);
     },
-    [curBase, toast, loadPayouts]
+    [curBase, toast, loadPayouts, audit]
   );
 
   const inviteMember = useCallback(
@@ -740,11 +767,12 @@ export function DocaProvider({ children }: { children: ReactNode }) {
         toast(error.message);
         return false;
       }
+      void audit("membro_convidado", { email: email.trim(), papel: role });
       await loadMembers(curBase.id);
       toast("Membro adicionado");
       return true;
     },
-    [curBase, toast, loadMembers]
+    [curBase, toast, loadMembers, audit]
   );
 
   const updateMemberRole = useCallback(
@@ -755,10 +783,11 @@ export function DocaProvider({ children }: { children: ReactNode }) {
         toast(error.message);
         return;
       }
+      void audit("papel_alterado", { userId, papel: role });
       await loadMembers(curBase.id);
       toast("Papel atualizado");
     },
-    [curBase, toast, loadMembers]
+    [curBase, toast, loadMembers, audit]
   );
 
   const removeMember = useCallback(
@@ -774,10 +803,11 @@ export function DocaProvider({ children }: { children: ReactNode }) {
         toast(error.message);
         return;
       }
+      void audit("membro_removido", { userId });
       await loadMembers(curBase.id);
       toast("Membro removido");
     },
-    [curBase, toast, loadMembers]
+    [curBase, toast, loadMembers, audit]
   );
 
   const savePaymentRule = useCallback(
@@ -954,9 +984,22 @@ export function DocaProvider({ children }: { children: ReactNode }) {
         return;
       }
       await Promise.all([loadAccessRequests(), loadAllowedEmails()]);
-      toast(aprovar ? "Aprovado: o e-mail já pode criar a conta" : "Pedido recusado");
+      if (!aprovar) {
+        toast("Pedido recusado");
+        return;
+      }
+      // avisa a pessoa por e-mail (convite para criar a senha); se falhar, a aprovação continua valendo
+      const email = accessRequests.find((r) => r.id === id)?.email;
+      let aviso = "Aprovado: o e-mail já pode criar a conta";
+      if (email) {
+        const { data, error: eMail } = await supabase.functions.invoke("notificar-aprovacao", { body: { email } });
+        if (eMail) aviso += ". Não consegui enviar o e-mail de aviso: avise a pessoa por conta própria.";
+        else if (data?.status === "ja_cadastrado") aviso += " (a pessoa já tem conta).";
+        else aviso = "Aprovado: enviamos um e-mail para a pessoa criar a senha";
+      }
+      toast(aviso);
     },
-    [toast, loadAccessRequests, loadAllowedEmails]
+    [toast, loadAccessRequests, loadAllowedEmails, accessRequests]
   );
 
   const inviteToOrg = useCallback(
@@ -1014,7 +1057,7 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   );
 
   const importBases = useCallback(
-    async (items: ImportItem[], carta: ImportSheet | null, opts: { orgId?: string | null; companyName?: string | null }) => {
+    async (items: ImportItem[], carta: ImportSheet | null, opts: { orgId?: string | null; companyName?: string | null; arquivos?: { nome: string; tamanho: number; hash: string }[]; divergencias?: number }) => {
       if (!user) return null;
       let merged: ImportItem[];
       try {
@@ -1073,7 +1116,23 @@ export function DocaProvider({ children }: { children: ReactNode }) {
         const row = buildDayRow({ baseId: b.id, data: it.date, meta: b.meta, salvoPor: user.email || "", result });
         const { error } = await supabase.from("days").upsert(row, { onConflict: "base_id,data" });
         if (error) toast(`Não consegui salvar o dia de "${it.name}": ${error.message}`);
-        else days++;
+        else {
+          days++;
+          const ctx = { base_id: b.id, user_id: user.id, user_email: user.email || "" };
+          await supabase.from("import_batches").insert({
+            ...ctx,
+            data: it.date,
+            arquivos: opts.arquivos || [],
+            total: result.tot.t,
+            entregues: result.tot.e,
+            divergencias: opts.divergencias || 0,
+          });
+          await supabase.from("audit_logs").insert({
+            ...ctx,
+            action: "importacao",
+            detail: { data: it.date, total: result.tot.t, entregues: result.tot.e, arquivos: (opts.arquivos || []).map((a) => a.nome), carta_ok: result.hasEnt },
+          });
+        }
       }
       await Promise.all([loadBases(), loadOrgs(), curBase ? loadHistory(curBase.id) : Promise.resolve()]);
       return { created, existing, days, firstBaseId };
@@ -1133,6 +1192,7 @@ export function DocaProvider({ children }: { children: ReactNode }) {
     deleteDriver,
     saveDay,
     deleteDay,
+    audit,
     saveOccurrence,
     occRows,
     generatePayout,

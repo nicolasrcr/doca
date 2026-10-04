@@ -26,6 +26,32 @@ export interface Base {
   carga_desigual_max?: number; // fração da mediana de pacotes acima disso = aviso (ex.: 1.4)
   entrega_noturna_limite?: number; // hora do dia (0-23) a partir da qual conta como noturna (ex.: 20)
   entrega_noturna_min?: number; // quantidade mínima de entregas noturnas para gerar o alerta (ex.: 10)
+  metas_semana?: Record<string, number>; // meta (%) por dia da semana, "0" = domingo … "6" = sábado; vazio = usa a meta da base
+  resumo_diario?: boolean; // envia o resumo todo dia às 8h para o webhook
+}
+
+export interface ActionItem {
+  id: string;
+  base_id: string;
+  titulo: string;
+  detalhe: string | null;
+  responsavel: string | null;
+  prazo: string | null;
+  status: "aberta" | "feita";
+  origem: string | null;
+  baseline: number | null; // % de entrega dos 7 dias anteriores à criação
+  done_at: string | null;
+  created_at: string;
+}
+
+export interface Subscription {
+  owner_id: string;
+  plano: string;
+  status: "teste" | "ativo" | "suspenso";
+  trial_ate: string | null;
+  limite_bases: number | null;
+  link_pagamento: string | null;
+  obs: string | null;
 }
 
 export type OrgRole = "admin" | "editor" | "viewer";
@@ -106,6 +132,7 @@ export interface Driver {
   active: boolean;
   placa: string;
   veiculo: string;
+  meta?: number | null; // meta própria (%); vazio = usa a meta da base
 }
 
 export interface DayRecord {
@@ -304,6 +331,10 @@ export const SCREEN_IDS = [
   "bases",
   "membros",
   "orgs",
+  "auditoria",
+  "plano",
+  "planos",
+  "rastreador",
   "clientes",
   "parados",
   "pendencias",
@@ -329,6 +360,10 @@ export const SCREENS: Record<ScreenId, { label: string; cat: string }> = {
   bases: { label: "Minhas bases", cat: "gestaobases" },
   membros: { label: "Membros e permissões", cat: "gestaobases" },
   orgs: { label: "Empresa e equipe", cat: "gestaobases" },
+  auditoria: { label: "Auditoria e importações", cat: "gestaobases" },
+  plano: { label: "Plano de ação", cat: "indicadores" },
+  planos: { label: "Planos e cobrança", cat: "gestaobases" },
+  rastreador: { label: "Rastreador (beta)", cat: "transporte" },
   clientes: { label: "Ocorrências", cat: "clientes" },
   parados: { label: "Pacotes parados (aging)", cat: "clientes" },
   pendencias: { label: "Pendências de hoje", cat: "clientes" },

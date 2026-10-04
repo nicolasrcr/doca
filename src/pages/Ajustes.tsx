@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
 import { useToast } from "../hooks/useToast";
+import { NOMES_DIA } from "../lib/metas";
 
 export default function Ajustes() {
   const { curBase, updateBase, canEdit } = useDoca();
@@ -22,6 +23,7 @@ export default function Ajustes() {
   const [cargaMax, setCargaMax] = useState(curBase?.carga_desigual_max ?? 1.4);
   const [noturnaLimite, setNoturnaLimite] = useState(curBase?.entrega_noturna_limite ?? 20);
   const [noturnaMin, setNoturnaMin] = useState(curBase?.entrega_noturna_min ?? 10);
+  const [semana, setSemana] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setName(curBase?.name || "");
@@ -41,6 +43,7 @@ export default function Ajustes() {
     setCargaMax(curBase?.carga_desigual_max ?? 1.4);
     setNoturnaLimite(curBase?.entrega_noturna_limite ?? 20);
     setNoturnaMin(curBase?.entrega_noturna_min ?? 10);
+    setSemana(Object.fromEntries(Object.entries(curBase?.metas_semana || {}).map(([k, v]) => [k, String(v)])));
     document.documentElement.removeAttribute("data-theme");
     if (curBase?.theme) document.documentElement.setAttribute("data-theme", curBase.theme);
   }, [curBase]);
@@ -48,7 +51,15 @@ export default function Ajustes() {
   const save = () => {
     if (!(meta >= 50 && meta <= 100)) { toast("Meta precisa estar entre 50% e 100%"); return; }
     if (!(alerta >= 0 && alerta < meta)) { toast("O alerta precisa ser menor que a meta"); return; }
+    const metasSemana: Record<string, number> = {};
+    for (const [k, v] of Object.entries(semana)) {
+      if (v === "") continue;
+      const n = parseFloat(v);
+      if (!(n >= 50 && n <= 100)) { toast(`A meta de ${NOMES_DIA[Number(k)]} precisa estar entre 50% e 100%`); return; }
+      metasSemana[k] = n;
+    }
     updateBase({
+      metas_semana: metasSemana,
       name: name.trim() || curBase?.name,
       city: city.trim(),
       meta,
@@ -95,6 +106,19 @@ export default function Ajustes() {
             <option value="light">Claro</option>
             <option value="dark">Escuro</option>
           </select>
+        </div>
+      </div>
+      <div className="panel" style={{ marginTop: "1rem" }}>
+        <h2>Meta por dia da semana</h2>
+        <p className="muted small" style={{ margin: "0 0 .75rem" }}>Opcional. Se segunda-feira é sempre mais pesada, por exemplo, dá para ter uma meta própria para ela. Em branco, vale a meta de entrega da base ({meta}%). Cada motorista também pode ter uma meta própria em “Motoristas e veículos”.</p>
+        <div className="form">
+          {NOMES_DIA.map((nome, i) => (
+            <span key={i} style={{ display: "contents" }}>
+              <label htmlFor={`setDia${i}`}>{nome} (%)</label>
+              <input id={`setDia${i}`} type="number" min={50} max={100} step={0.5} placeholder={String(meta)} value={semana[String(i)] ?? ""} disabled={!canEdit}
+                onChange={(e) => setSemana({ ...semana, [String(i)]: e.target.value })} />
+            </span>
+          ))}
         </div>
       </div>
       <div className="panel" style={{ marginTop: "1rem" }}>

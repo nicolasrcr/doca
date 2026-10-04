@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
+import { supabase } from "../lib/supabase";
 import { fmtN, fmtPct, norm } from "../lib/format";
 import { scanJmsFiles, type ImportScan } from "../lib/importer";
 import type { Check } from "../lib/validate";
+import { ROTULO, divergenciasCsv, type Divergencia, type TipoDivergencia } from "../lib/divergencias";
+import { csvBlob, downloadBlob } from "../hooks/useToast";
 
 interface Row {
   id: string;
@@ -11,6 +14,16 @@ interface Row {
   name: string;
   date: string;
   meta: number;
+}
+
+async function hashDe(f: File): Promise<string> {
+  try {
+    const buf = await f.arrayBuffer();
+    const h = await crypto.subtle.digest("SHA-256", buf);
+    return Array.from(new Uint8Array(h)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return `${f.name}|${f.size}`;
+  }
 }
 
 const fileId = (f: File) => `${f.name}|${f.size}|${f.lastModified}`;
@@ -55,6 +68,30 @@ function ChecksPanel({ checks, onFix, busy }: { checks: Check[]; onFix: (horas: 
   );
 }
 
+function DivergenciasPanel({ lista }: { lista: Divergencia[] }) {
+  if (!lista.length) return null;
+  const tipos = (Object.keys(ROTULO) as TipoDivergencia[]).map((t) => ({ t, itens: lista.filter((d) => d.tipo === t) })).filter((x) => x.itens.length);
+  return (
+    <div className="warnbox" style={{ margin: ".6rem 0" }}>
+      <div className="row">
+        <b>Divergências encontradas ({fmtN(lista.length)})</b>
+        <span className="spacer"></span>
+        <button type="button" className="btn small" onClick={() => downloadBlob("divergencias-importacao.csv", csvBlob(divergenciasCsv(lista)))}>Baixar lista (CSV)</button>
+      </div>
+      <p className="small" style={{ margin: ".3rem 0" }}>Nenhum desses casos é descartado em silêncio: pedidos repetidos contam uma vez, e os demais ficam listados com a linha da planilha para você corrigir na origem.</p>
+      {tipos.map(({ t, itens }) => (
+        <details key={t} style={{ marginTop: ".3rem" }}>
+          <summary className="small"><b>{ROTULO[t]}</b>: {fmtN(itens.length)}</summary>
+          <ul className="small" style={{ margin: ".3rem 0 0", paddingLeft: "1.1rem", maxHeight: 180, overflow: "auto" }}>
+            {itens.slice(0, 50).map((d, i) => (<li key={i}><span className="mono">{d.codigo || "—"}</span> · {d.detalhe}</li>))}
+            {itens.length > 50 && <li>… e mais {fmtN(itens.length - 50)} no CSV</li>}
+          </ul>
+        </details>
+      ))}
+    </div>
+  );
+}
+
 export default function ImportWizard({ onDone, initialFiles }: { onDone: (firstBaseId: string | null, totalBases: number) => void; initialFiles?: File[] }) {
   const { bases, orgs, orgRoles, isSuperAdmin, importBases } = useDoca();
   const [step, setStep] = useState<Step>("idle");
@@ -69,6 +106,8 @@ export default function ImportWizard({ onDone, initialFiles }: { onDone: (firstB
   const [companyName, setCompanyName] = useState("");
   const [summary, setSummary] = useState<{ created: number; existing: number; days: number; firstBaseId: string | null } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hashes = useRef(new Map<string, string>());
+  const [jaImportado, setJaImportado] = useState<string[]>([]);
 
   const hasOwnOrg = Object.values(orgRoles).includes("admin");
   const creatableOrgs = orgs.filter((o) => isSuperAdmin || orgRoles[o.id] === "admin");
@@ -129,6 +168,24 @@ export default function ImportWizard({ onDone, initialFiles }: { onDone: (firstB
     await readAll(next);
   };
 
+  // Avisa quando o mesmo arquivo (mesmo conteúdo) já foi importado antes. Reimportar não duplica nada:
+  // o dia da base é substituído, mas é bom o cliente saber.
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      const achados: string[] = [];
+      for (const f of files) {
+        let h = hashes.current.get(fileId(f));
+        if (!h) { h = await hashDe(f); hashes.current.set(fileId(f), h); }
+        const { data } = await supabase.from("import_batches").select("created_at,user_email").contains("arquivos", [{ hash: h }]).order("created_at", { ascending: false }).limit(1);
+        const b = (data as { created_at: string; user_email: string }[] | null)?.[0];
+        if (b) achados.push(`${f.name}: importado em ${new Date(b.created_at).toLocaleString("pt-BR")}${b.user_email ? " por " + b.user_email : ""}`);
+      }
+      if (vivo) setJaImportado(achados);
+    })();
+    return () => { vivo = false; };
+  }, [files]);
+
   const startedRef = useRef(false);
   useEffect(() => {
     if (initialFiles?.length && !startedRef.current) {
@@ -151,7 +208,10 @@ export default function ImportWizard({ onDone, initialFiles }: { onDone: (firstB
       const g = scan.groups.find((x) => x.id === r.id)!;
       return { name: r.name.trim(), date: r.date, meta: r.meta, table: g.table };
     });
+    const arquivos = files.map((f) => ({ nome: f.name, tamanho: f.size, hash: hashes.current.get(fileId(f)) || `${f.name}|${f.size}` }));
     const res = await importBases(items, scan.carta, {
+      arquivos,
+      divergencias: scan.divergencias.length,
       orgId: orgId || null,
       companyName: offerCompany && makeCompany ? companyName.trim() || "Minha empresa" : null,
     });
@@ -205,6 +265,14 @@ export default function ImportWizard({ onDone, initialFiles }: { onDone: (firstB
           onFix={async (h) => { setShiftHoras(h); await readAll(files, h); }}
           busy={step === "importing"}
         />
+        {jaImportado.length > 0 && (
+          <div className="infobox">
+            <b>Estes arquivos já foram importados antes:</b>
+            <ul className="small" style={{ margin: ".3rem 0 0", paddingLeft: "1.1rem" }}>{jaImportado.map((t) => (<li key={t}>{t}</li>))}</ul>
+            Pode importar de novo sem medo: o dia da base é atualizado, nada é duplicado.
+          </div>
+        )}
+        <DivergenciasPanel lista={scan.divergencias} />
         {scan.enderecos > 0 ? (
           <div className="okbox">Achei o bairro/CEP do destinatário de {fmtN(scan.enderecos)} pedidos: a análise de rotas por bairro fica disponível.</div>
         ) : (

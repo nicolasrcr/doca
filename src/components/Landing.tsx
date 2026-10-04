@@ -8,7 +8,7 @@ import DocaLogo from "./DocaLogo";
 type Aba = "in" | "up";
 
 function LoginCard({ inicial = "in" }: { inicial?: Aba }) {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, esqueciSenha } = useAuth();
   const toast = useToast();
   const [aba, setAba] = useState<Aba>(inicial);
   const [email, setEmail] = useState("");
@@ -51,6 +51,16 @@ function LoginCard({ inicial = "in" }: { inicial?: Aba }) {
           {busy ? "Aguarde…" : aba === "in" ? "Entrar" : "Criar conta"}
         </button>
       </form>
+      {aba === "in" && (
+        <p className="lp-hint">
+          <a href="#esqueci" onClick={async (e) => {
+            e.preventDefault();
+            if (!email.trim()) { toast("Digite o seu e-mail acima e toque em “Esqueci a senha” de novo."); return; }
+            const { error } = await esqueciSenha(email.trim());
+            toast(error ? "Não consegui enviar agora: " + error.message : "Se este e-mail tiver conta, enviamos o link para criar uma nova senha.");
+          }}>Esqueci a senha</a>
+        </p>
+      )}
       <p className="lp-hint">
         {aba === "in"
           ? "Ainda não tem acesso? "

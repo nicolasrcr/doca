@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
 import { useToast, downloadBlob, copyText } from "../hooks/useToast";
 import { readRows, prepare } from "../lib/parse";
-import { fmtN } from "../lib/format";
+import { fmtN, todayISO } from "../lib/format";
+import { contextoWhats } from "../lib/share";
 import type { SheetTable } from "../lib/types";
 
 interface AgingRow {
@@ -107,7 +108,7 @@ export default function PacotesParados() {
 
   const whatsText = () => {
     const critico = filtered.filter((r) => r.dias >= staleDays);
-    let s = `*Pacotes parados — ${curBase?.name || ""}*\n\n`;
+    let s = `*Pacotes parados*\n${contextoWhats(curBase?.name || "", todayISO())}\n`;
     s += `Total monitorado: ${fmtN(rows.length)}\n⚠️ Parados há ${staleDays}+ dias: ${fmtN(critico.length)}\n\n`;
     for (const label of agingLabels) s += `${label}: ${fmtN(totals[label])}\n`;
     return s;
