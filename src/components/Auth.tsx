@@ -16,7 +16,10 @@ export default function Auth() {
     setBusy(true);
     const { error } = mode === "in" ? await signIn(email, password) : await signUp(email, password);
     setBusy(false);
-    if (error) toast(error.message);
+    if (error) {
+      const blocked = /autorizado|Database error saving new user/i.test(error.message);
+      toast(mode === "up" && blocked ? "Este e-mail ainda não foi liberado. Peça acesso ao administrador do Doca." : error.message);
+    }
     else if (mode === "up") toast("Conta criada. Verifique seu e-mail se a confirmação estiver ativada.");
   };
 

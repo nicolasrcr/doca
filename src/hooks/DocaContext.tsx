@@ -13,6 +13,7 @@ import { useToast } from "./useToast";
 import { buildAliasIndex, canonicalDriver, computeColeta, recompute, type ColetaResult } from "../lib/compute";
 import { todayISO } from "../lib/format";
 import type {
+  AllowedEmail,
   Base,
   BaseRole,
   DayRecord,
@@ -47,6 +48,12 @@ interface DocaState {
   orgRoles: Record<string, OrgRole>;
   orgMembers: OrgMember[];
   loadOrgMembers: (orgId: string) => Promise<void>;
+  allowedEmails: AllowedEmail[];
+  loadAllowedEmails: () => Promise<void>;
+  inviteToOrg: (orgId: string, email: string, role: OrgRole) => Promise<"added" | "pending" | null>;
+  authorizeEmail: (email: string) => Promise<boolean>;
+  removeAllowedEmail: (email: string) => Promise<void>;
+  createMyOrganization: (name: string, baseId?: string | null) => Promise<boolean>;
   createOrganization: (name: string, adminEmail: string) => Promise<boolean>;
   inviteOrgMember: (orgId: string, email: string, role: OrgRole) => Promise<boolean>;
   updateOrgMemberRole: (orgId: string, userId: string, role: OrgRole) => Promise<void>;
@@ -109,6 +116,7 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   const [orgs, setOrgs] = useState<Organization[]>([]);
   const [orgRoles, setOrgRoles] = useState<Record<string, OrgRole>>({});
   const [orgMembers, setOrgMembers] = useState<OrgMember[]>([]);
+  const [allowedEmails, setAllowedEmails] = useState<AllowedEmail[]>([]);
   const [paymentRules, setPaymentRules] = useState<PaymentRule[]>([]);
   const [specialDays, setSpecialDays] = useState<SpecialDay[]>([]);
   const [adjustments, setAdjustments] = useState<DriverAdjustment[]>([]);
@@ -939,6 +947,65 @@ export function DocaProvider({ children }: { children: ReactNode }) {
     [toast, loadBases]
   );
 
+  const loadAllowedEmails = useCallback(async () => {
+    const { data } = await supabase.from("allowed_emails").select("email,org_id,role").order("email");
+    setAllowedEmails((data as AllowedEmail[]) || []);
+  }, []);
+
+  const inviteToOrg = useCallback(
+    async (orgId: string, email: string, role: OrgRole) => {
+      const { data, error } = await supabase.rpc("invite_to_org", { p_org_id: orgId, p_email: email.trim(), p_role: role });
+      if (error) {
+        toast(error.message);
+        return null;
+      }
+      await Promise.all([loadOrgMembers(orgId), loadAllowedEmails()]);
+      toast(data === "pending" ? "Convite criado. A pessoa entra assim que criar a conta com esse e-mail." : "Pessoa adicionada à empresa");
+      return data as "added" | "pending";
+    },
+    [toast, loadOrgMembers, loadAllowedEmails]
+  );
+
+  const authorizeEmail = useCallback(
+    async (email: string) => {
+      const { error } = await supabase.rpc("allow_email", { p_email: email.trim() });
+      if (error) {
+        toast(error.message);
+        return false;
+      }
+      await loadAllowedEmails();
+      toast("E-mail autorizado a criar conta");
+      return true;
+    },
+    [toast, loadAllowedEmails]
+  );
+
+  const removeAllowedEmail = useCallback(
+    async (email: string) => {
+      const { error } = await supabase.from("allowed_emails").delete().eq("email", email);
+      if (error) {
+        toast(error.message);
+        return;
+      }
+      await loadAllowedEmails();
+    },
+    [toast, loadAllowedEmails]
+  );
+
+  const createMyOrganization = useCallback(
+    async (name: string, baseId?: string | null) => {
+      const { error } = await supabase.rpc("create_my_organization", { p_name: name.trim(), p_base_id: baseId || null });
+      if (error) {
+        toast(error.message);
+        return false;
+      }
+      await Promise.all([loadOrgs(), loadBases()]);
+      toast("Empresa criada");
+      return true;
+    },
+    [toast, loadOrgs, loadBases]
+  );
+
   const value: DocaState = {
     ready,
     bases,
@@ -955,6 +1022,12 @@ export function DocaProvider({ children }: { children: ReactNode }) {
     orgRoles,
     orgMembers,
     loadOrgMembers,
+    allowedEmails,
+    loadAllowedEmails,
+    inviteToOrg,
+    authorizeEmail,
+    removeAllowedEmail,
+    createMyOrganization,
     createOrganization,
     inviteOrgMember,
     updateOrgMemberRole,

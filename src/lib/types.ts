@@ -43,6 +43,12 @@ export interface OrgMember {
   email: string;
 }
 
+export interface AllowedEmail {
+  email: string;
+  org_id: string | null;
+  role: OrgRole | null;
+}
+
 export interface PaymentRule {
   id: string;
   base_id: string;
@@ -274,6 +280,7 @@ export interface SheetTable {
 }
 
 export const SCREEN_IDS = [
+  "geral",
   "ajustes",
   "entregas",
   "conferencia",
@@ -296,13 +303,14 @@ export const SCREEN_IDS = [
 export type ScreenId = (typeof SCREEN_IDS)[number];
 
 export const SCREENS: Record<ScreenId, { label: string; cat: string }> = {
+  geral: { label: "Visão geral das bases", cat: "indicadores" },
   ajustes: { label: "Dados da base", cat: "infos" },
   entregas: { label: "Monitoramento de bipagem de entrega", cat: "operacao" },
   conferencia: { label: "Conferência de carga", cat: "operacao" },
   qrconf: { label: "Conferência QR", cat: "operacao" },
   bases: { label: "Minhas bases", cat: "gestaobases" },
   membros: { label: "Membros e permissões", cat: "gestaobases" },
-  orgs: { label: "Organizações", cat: "gestaobases" },
+  orgs: { label: "Empresa e equipe", cat: "gestaobases" },
   clientes: { label: "Ocorrências", cat: "clientes" },
   parados: { label: "Pacotes parados (aging)", cat: "clientes" },
   pendencias: { label: "Pendências de hoje", cat: "clientes" },

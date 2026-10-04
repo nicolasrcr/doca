@@ -3,58 +3,99 @@ import { useDoca } from "../hooks/DocaContext";
 import { useAuth } from "../hooks/useAuth";
 import type { OrgRole } from "../lib/types";
 
-const ROLE_LABEL: Record<OrgRole, string> = { admin: "Administrador", editor: "Editor", viewer: "Leitor" };
+const ROLE_LABEL: Record<OrgRole, string> = { admin: "Gestor", editor: "Operador", viewer: "Consulta" };
+const ROLE_HELP = "Gestor: administra a empresa, cria bases e convida pessoas. Operador: importa planilhas e opera. Consulta: só visualiza.";
+
+function RoleSelect({ value, onChange }: { value: OrgRole; onChange: (r: OrgRole) => void }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value as OrgRole)}>
+      <option value="admin">Gestor</option>
+      <option value="editor">Operador</option>
+      <option value="viewer">Consulta</option>
+    </select>
+  );
+}
 
 export default function Orgs() {
   const {
-    orgs, orgRoles, orgMembers, isSuperAdmin, bases,
-    loadOrgMembers, createOrganization, inviteOrgMember, updateOrgMemberRole, removeOrgMember,
+    orgs, orgRoles, orgMembers, isSuperAdmin, bases, curBase, allowedEmails,
+    loadOrgMembers, loadAllowedEmails, createOrganization, createMyOrganization, inviteToOrg,
+    updateOrgMemberRole, removeOrgMember, authorizeEmail, removeAllowedEmail,
   } = useDoca();
   const { user } = useAuth();
   const [orgId, setOrgId] = useState("");
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<OrgRole>("editor");
+  const [busy, setBusy] = useState(false);
+  const [myName, setMyName] = useState("");
+  const [withBase, setWithBase] = useState(true);
   const [newName, setNewName] = useState("");
   const [newAdmin, setNewAdmin] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [freeEmail, setFreeEmail] = useState("");
 
   const cur = orgs.find((o) => o.id === orgId) || orgs[0] || null;
   const canManage = !!cur && (isSuperAdmin || orgRoles[cur.id] === "admin");
+  const hasOwnOrg = Object.values(orgRoles).includes("admin");
 
   useEffect(() => {
     if (cur) loadOrgMembers(cur.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cur?.id]);
 
-  const invite = async () => {
-    if (!cur || !email.trim()) return;
+  useEffect(() => {
+    if (isSuperAdmin || hasOwnOrg) loadAllowedEmails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuperAdmin, hasOwnOrg]);
+
+  const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
-    const ok = await inviteOrgMember(cur.id, email, inviteRole);
+    await fn();
     setBusy(false);
-    if (ok) setEmail("");
   };
 
-  const create = async () => {
-    if (!newName.trim() || !newAdmin.trim()) return;
-    setBusy(true);
-    const ok = await createOrganization(newName, newAdmin);
-    setBusy(false);
-    if (ok) {
-      setNewName("");
-      setNewAdmin("");
-    }
-  };
-
+  const members = cur ? orgMembers.filter((m) => m.org_id === cur.id) : [];
+  const memberEmails = new Set(members.map((m) => m.email.toLowerCase()));
+  const pending = cur ? allowedEmails.filter((a) => a.org_id === cur.id && !memberEmails.has(a.email)) : [];
   const orgBases = cur ? bases.filter((b) => b.org_id === cur.id) : [];
+  const loose = allowedEmails.filter((a) => !a.org_id);
 
   return (
     <section className="pane active">
-      {isSuperAdmin && (
+      {!cur && !isSuperAdmin && (
         <div className="panel">
-          <h2>Nova organização</h2>
+          <h2>Monte sua empresa</h2>
           <p className="muted small">
-            Uma organização agrupa as bases de um parceiro. Quem for <b>administrador</b> dela cria bases e convida os
-            funcionários. A pessoa precisa já ter uma conta no Doca.
+            Tem mais de uma base ou uma equipe que usa o sistema? Crie sua empresa: você passa a ser o gestor, cria quantas
+            bases quiser e convida as pessoas uma única vez, valendo para todas as bases.
+          </p>
+          <div className="row" style={{ margin: "1rem 0", alignItems: "flex-end" }}>
+            <label className="inline" style={{ flexDirection: "column", alignItems: "flex-start", gap: ".25rem" }}>
+              <span className="small muted">Nome da empresa</span>
+              <input value={myName} placeholder="Ex.: Grupo Silva Logística" onChange={(e) => setMyName(e.target.value)} style={{ minWidth: 260 }} />
+            </label>
+            <button
+              className="btn primary"
+              disabled={busy || !myName.trim()}
+              onClick={() => run(() => createMyOrganization(myName, withBase && curBase ? curBase.id : null))}
+            >
+              Criar empresa
+            </button>
+          </div>
+          {curBase && (
+            <label className="inline small">
+              <input type="checkbox" checked={withBase} onChange={(e) => setWithBase(e.target.checked)} /> Incluir a base atual
+              ({curBase.name}) na empresa
+            </label>
+          )}
+        </div>
+      )}
+
+      {isSuperAdmin && (
+        <div className="panel" style={{ marginBottom: "1rem" }}>
+          <h2>Nova empresa de parceiro</h2>
+          <p className="muted small">
+            Cria a empresa e define o gestor dela. A pessoa precisa já ter conta; se ainda não tem, autorize o e-mail dela
+            mais abaixo e peça para ela se cadastrar primeiro.
           </p>
           <div className="row" style={{ margin: "1rem 0", alignItems: "flex-end" }}>
             <label className="inline" style={{ flexDirection: "column", alignItems: "flex-start", gap: ".25rem" }}>
@@ -62,114 +103,136 @@ export default function Orgs() {
               <input value={newName} placeholder="Ex.: Grupo Silva" onChange={(e) => setNewName(e.target.value)} style={{ minWidth: 200 }} />
             </label>
             <label className="inline" style={{ flexDirection: "column", alignItems: "flex-start", gap: ".25rem" }}>
-              <span className="small muted">E-mail do administrador</span>
+              <span className="small muted">E-mail do gestor</span>
               <input type="email" value={newAdmin} placeholder="parceiro@empresa.com" onChange={(e) => setNewAdmin(e.target.value)} style={{ minWidth: 240 }} />
             </label>
-            <button className="btn primary" disabled={busy || !newName.trim() || !newAdmin.trim()} onClick={create}>
-              Criar organização
+            <button
+              className="btn primary"
+              disabled={busy || !newName.trim() || !newAdmin.trim()}
+              onClick={() => run(async () => { if (await createOrganization(newName, newAdmin)) { setNewName(""); setNewAdmin(""); } })}
+            >
+              Criar empresa
             </button>
           </div>
         </div>
       )}
 
-      <div className="panel">
-        <div className="row">
-          <h2 style={{ margin: 0 }}>Organizações</h2>
-          <span className="spacer"></span>
-          {orgs.length > 0 && (
-            <select value={cur?.id || ""} onChange={(e) => setOrgId(e.target.value)}>
-              {orgs.map((o) => (
-                <option key={o.id} value={o.id}>{o.name}</option>
-              ))}
-            </select>
+      {cur && (
+        <div className="panel" style={{ marginBottom: "1rem" }}>
+          <div className="row">
+            <h2 style={{ margin: 0 }}>{isSuperAdmin ? "Empresas" : "Minha empresa"}</h2>
+            <span className="spacer"></span>
+            {orgs.length > 1 && (
+              <select value={cur.id} onChange={(e) => setOrgId(e.target.value)}>
+                {orgs.map((o) => (<option key={o.id} value={o.id}>{o.name}</option>))}
+              </select>
+            )}
+          </div>
+          {orgs.length === 1 && <p style={{ margin: ".2rem 0 0" }}><b>{cur.name}</b></p>}
+          <p className="muted small">{ROLE_HELP} O papel vale para todas as bases da empresa.</p>
+
+          {canManage && (
+            <div className="row" style={{ margin: "1rem 0", alignItems: "flex-end" }}>
+              <label className="inline" style={{ flexDirection: "column", alignItems: "flex-start", gap: ".25rem" }}>
+                <span className="small muted">E-mail da pessoa</span>
+                <input
+                  type="email"
+                  value={email}
+                  placeholder="nome@empresa.com"
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && email.trim() && run(async () => { if (await inviteToOrg(cur.id, email, inviteRole)) setEmail(""); })}
+                  style={{ minWidth: 240 }}
+                />
+              </label>
+              <label className="inline" style={{ flexDirection: "column", alignItems: "flex-start", gap: ".25rem" }}>
+                <span className="small muted">Papel</span>
+                <RoleSelect value={inviteRole} onChange={setInviteRole} />
+              </label>
+              <button
+                className="btn primary"
+                disabled={busy || !email.trim()}
+                onClick={() => run(async () => { if (await inviteToOrg(cur.id, email, inviteRole)) setEmail(""); })}
+              >
+                Convidar
+              </button>
+            </div>
+          )}
+          {canManage && <p className="muted small">Quem ainda não tem conta recebe um convite pendente e entra na empresa assim que se cadastrar com esse e-mail.</p>}
+
+          <div className="tablewrap" style={{ marginTop: "1rem" }}>
+            <table className="drv">
+              <thead><tr><th>Pessoa</th><th>Papel</th><th></th></tr></thead>
+              <tbody>
+                {members.map((m) => (
+                  <tr key={m.user_id}>
+                    <td>{m.email}{m.user_id === user?.id ? <span className="muted small"> (você)</span> : null}</td>
+                    <td>
+                      {canManage ? (
+                        <RoleSelect value={m.role} onChange={(r) => updateOrgMemberRole(cur.id, m.user_id, r)} />
+                      ) : (
+                        <span className="badge ok">{ROLE_LABEL[m.role]}</span>
+                      )}
+                    </td>
+                    <td>
+                      {canManage && (
+                        <button className="btn small" onClick={() => { if (confirm(`Remover ${m.email} da empresa ${cur.name}?`)) removeOrgMember(cur.id, m.user_id); }}>
+                          Remover
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {pending.map((a) => (
+                  <tr key={a.email}>
+                    <td>{a.email} <span className="badge warn">convite pendente</span></td>
+                    <td>{a.role ? ROLE_LABEL[a.role] : "—"}</td>
+                    <td>{canManage && <button className="btn small" onClick={() => removeAllowedEmail(a.email)}>Cancelar</button>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <h3 style={{ marginTop: "1.5rem" }}>Bases da empresa</h3>
+          {orgBases.length === 0 ? (
+            <div className="infobox">Nenhuma base ainda.{canManage ? " Crie uma em “Minhas bases” escolhendo esta empresa." : ""}</div>
+          ) : (
+            <ul>{orgBases.map((b) => (<li key={b.id}>{b.name}{b.city ? ` — ${b.city}` : ""}</li>))}</ul>
           )}
         </div>
+      )}
 
-        {!cur ? (
-          <div className="infobox" style={{ marginTop: "1rem" }}>
-            Você ainda não faz parte de nenhuma organização.
-            {isSuperAdmin ? " Crie a primeira acima." : " Bases criadas por você continuam funcionando normalmente."}
+      {isSuperAdmin && (
+        <div className="panel">
+          <h2>E-mails autorizados a se cadastrar</h2>
+          <p className="muted small">
+            O cadastro é restrito: só entra quem tem o e-mail liberado aqui ou convidado por um gestor de empresa.
+          </p>
+          <div className="row" style={{ margin: "1rem 0", alignItems: "flex-end" }}>
+            <input type="email" value={freeEmail} placeholder="cliente@empresa.com" onChange={(e) => setFreeEmail(e.target.value)} style={{ minWidth: 260 }} />
+            <button
+              className="btn primary"
+              disabled={busy || !freeEmail.trim()}
+              onClick={() => run(async () => { if (await authorizeEmail(freeEmail)) setFreeEmail(""); })}
+            >
+              Autorizar
+            </button>
           </div>
-        ) : (
-          <>
-            <p className="muted small">
-              O papel na organização vale para <b>todas as bases dela</b>. <b>Administrador</b> cria bases, convida
-              pessoas e gerencia as bases; <b>editor</b> opera o sistema; <b>leitor</b> só visualiza.
-            </p>
-
-            {canManage && (
-              <div className="row" style={{ margin: "1rem 0", alignItems: "flex-end" }}>
-                <label className="inline" style={{ flexDirection: "column", alignItems: "flex-start", gap: ".25rem" }}>
-                  <span className="small muted">E-mail da pessoa</span>
-                  <input
-                    type="email"
-                    value={email}
-                    placeholder="nome@empresa.com"
-                    onChange={(e) => setEmail(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && invite()}
-                    style={{ minWidth: 240 }}
-                  />
-                </label>
-                <label className="inline" style={{ flexDirection: "column", alignItems: "flex-start", gap: ".25rem" }}>
-                  <span className="small muted">Papel</span>
-                  <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as OrgRole)}>
-                    <option value="admin">Administrador</option>
-                    <option value="editor">Editor</option>
-                    <option value="viewer">Leitor</option>
-                  </select>
-                </label>
-                <button className="btn primary" disabled={busy || !email.trim()} onClick={invite}>
-                  Adicionar
-                </button>
-              </div>
-            )}
-
-            <div className="tablewrap" style={{ marginTop: "1rem" }}>
-              <table className="drv">
-                <thead><tr><th>Pessoa</th><th>Papel</th><th></th></tr></thead>
-                <tbody>
-                  {orgMembers.filter((m) => m.org_id === cur.id).map((m) => (
-                    <tr key={m.user_id}>
-                      <td>{m.email}{m.user_id === user?.id ? <span className="muted small"> (você)</span> : null}</td>
-                      <td>
-                        {canManage ? (
-                          <select value={m.role} onChange={(e) => updateOrgMemberRole(cur.id, m.user_id, e.target.value as OrgRole)}>
-                            <option value="admin">Administrador</option>
-                            <option value="editor">Editor</option>
-                            <option value="viewer">Leitor</option>
-                          </select>
-                        ) : (
-                          <span className="badge ok">{ROLE_LABEL[m.role]}</span>
-                        )}
-                      </td>
-                      <td>
-                        {canManage && (
-                          <button className="btn small" onClick={() => { if (confirm(`Remover ${m.email} da organização ${cur.name}?`)) removeOrgMember(cur.id, m.user_id); }}>
-                            Remover
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <h3 style={{ marginTop: "1.5rem" }}>Bases desta organização</h3>
-            {orgBases.length === 0 ? (
-              <div className="infobox">
-                Nenhuma base ainda.{canManage ? " Crie uma em “Minhas bases” escolhendo esta organização." : ""}
-              </div>
-            ) : (
-              <ul>
-                {orgBases.map((b) => (
-                  <li key={b.id}>{b.name}{b.city ? ` — ${b.city}` : ""}</li>
+          <div className="tablewrap">
+            <table className="drv">
+              <thead><tr><th>E-mail</th><th></th></tr></thead>
+              <tbody>
+                {loose.map((a) => (
+                  <tr key={a.email}>
+                    <td>{a.email}</td>
+                    <td><button className="btn small" onClick={() => { if (confirm(`Tirar a autorização de ${a.email}? Quem já tem conta continua entrando.`)) removeAllowedEmail(a.email); }}>Remover</button></td>
+                  </tr>
                 ))}
-              </ul>
-            )}
-          </>
-        )}
-      </div>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
