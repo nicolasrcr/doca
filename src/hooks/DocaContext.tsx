@@ -16,6 +16,7 @@ import { buildDayRow } from "../lib/dayRow";
 import { computeGroup, consolidate, type ImportItem } from "../lib/importer";
 import type { SheetTable as ImportSheet } from "../lib/types";
 import type {
+  AccessRequest,
   AllowedEmail,
   Base,
   BaseRole,
@@ -51,6 +52,9 @@ interface DocaState {
   orgRoles: Record<string, OrgRole>;
   orgMembers: OrgMember[];
   loadOrgMembers: (orgId: string) => Promise<void>;
+  accessRequests: AccessRequest[];
+  loadAccessRequests: () => Promise<void>;
+  decideAccess: (id: string, aprovar: boolean) => Promise<void>;
   allowedEmails: AllowedEmail[];
   loadAllowedEmails: () => Promise<void>;
   inviteToOrg: (orgId: string, email: string, role: OrgRole) => Promise<"added" | "pending" | null>;
@@ -125,6 +129,7 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   const [orgRoles, setOrgRoles] = useState<Record<string, OrgRole>>({});
   const [orgMembers, setOrgMembers] = useState<OrgMember[]>([]);
   const [allowedEmails, setAllowedEmails] = useState<AllowedEmail[]>([]);
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
   const [paymentRules, setPaymentRules] = useState<PaymentRule[]>([]);
   const [specialDays, setSpecialDays] = useState<SpecialDay[]>([]);
   const [adjustments, setAdjustments] = useState<DriverAdjustment[]>([]);
@@ -933,6 +938,27 @@ export function DocaProvider({ children }: { children: ReactNode }) {
     setAllowedEmails((data as AllowedEmail[]) || []);
   }, []);
 
+  const loadAccessRequests = useCallback(async () => {
+    const { data } = await supabase
+      .from("access_requests")
+      .select("id,nome,email,telefone,bases,mensagem,status,created_at")
+      .order("created_at", { ascending: false });
+    setAccessRequests((data as AccessRequest[]) || []);
+  }, []);
+
+  const decideAccess = useCallback(
+    async (id: string, aprovar: boolean) => {
+      const { error } = await supabase.rpc("decide_access_request", { p_id: id, p_aprovar: aprovar });
+      if (error) {
+        toast(error.message);
+        return;
+      }
+      await Promise.all([loadAccessRequests(), loadAllowedEmails()]);
+      toast(aprovar ? "Aprovado: o e-mail já pode criar a conta" : "Pedido recusado");
+    },
+    [toast, loadAccessRequests, loadAllowedEmails]
+  );
+
   const inviteToOrg = useCallback(
     async (orgId: string, email: string, role: OrgRole) => {
       const { data, error } = await supabase.rpc("invite_to_org", { p_org_id: orgId, p_email: email.trim(), p_role: role });
@@ -1049,10 +1075,10 @@ export function DocaProvider({ children }: { children: ReactNode }) {
         if (error) toast(`Não consegui salvar o dia de "${it.name}": ${error.message}`);
         else days++;
       }
-      await Promise.all([loadBases(), loadOrgs()]);
+      await Promise.all([loadBases(), loadOrgs(), curBase ? loadHistory(curBase.id) : Promise.resolve()]);
       return { created, existing, days, firstBaseId };
     },
-    [user, bases, toast, loadBases, loadOrgs]
+    [user, bases, curBase, toast, loadBases, loadOrgs, loadHistory]
   );
 
   const value: DocaState = {
@@ -1071,6 +1097,9 @@ export function DocaProvider({ children }: { children: ReactNode }) {
     orgRoles,
     orgMembers,
     loadOrgMembers,
+    accessRequests,
+    loadAccessRequests,
+    decideAccess,
     allowedEmails,
     loadAllowedEmails,
     inviteToOrg,

@@ -3,6 +3,7 @@ import { CATS, SCREENS, childrenOf } from "../lib/types";
 import type { ActiveScreen } from "../hooks/useNav";
 import { useAuth } from "../hooks/useAuth";
 import DocaLogo from "./DocaLogo";
+import { CatIcon } from "./Icons";
 
 const ease = [0.2, 0.8, 0.2, 1] as const;
 
@@ -45,7 +46,7 @@ export default function Sidebar({
                 onClick={() => toggleCat(cat.id)}
                 whileTap={{ scale: 0.98 }}
               >
-                <span className="ic">{cat.icon}</span>
+                <span className="ic"><CatIcon id={cat.id} /></span>
                 {cat.label}
               </motion.button>
               <AnimatePresence initial={false}>
@@ -93,7 +94,7 @@ export default function Sidebar({
           </span>
           <span
             className="mono"
-            style={{ fontSize: ".76rem", color: "#9AA0AC", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+            style={{ fontSize: ".78rem", color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
           >
             {user?.email}
           </span>

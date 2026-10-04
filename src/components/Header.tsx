@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
 import { useAuth } from "../hooks/useAuth";
 import type { ActiveScreen } from "../hooks/useNav";
+import { useImport } from "./ImportDialog";
 
 export default function Header({
   onHamb,
@@ -14,6 +15,7 @@ export default function Header({
 }) {
   const { bases, curBase, selectBase } = useDoca();
   const { signOut } = useAuth();
+  const imp = useImport();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -64,6 +66,9 @@ export default function Header({
           )}
         </div>
         <span className="spacer"></span>
+        <button className="btn small primary" type="button" onClick={() => imp.open()} title="Arraste ou escolha as planilhas do JMS">
+          ⬆ Importar planilhas
+        </button>
         <button className="btn small" type="button" onClick={onHome}>
           🏠 Página inicial
         </button>

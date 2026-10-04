@@ -18,7 +18,7 @@ function RoleSelect({ value, onChange }: { value: OrgRole; onChange: (r: OrgRole
 
 export default function Orgs() {
   const {
-    orgs, orgRoles, orgMembers, isSuperAdmin, bases, curBase, allowedEmails,
+    orgs, orgRoles, orgMembers, isSuperAdmin, bases, curBase, allowedEmails, accessRequests, loadAccessRequests, decideAccess,
     loadOrgMembers, loadAllowedEmails, createOrganization, createMyOrganization, inviteToOrg,
     updateOrgMemberRole, removeOrgMember, authorizeEmail, removeAllowedEmail,
   } = useDoca();
@@ -41,6 +41,11 @@ export default function Orgs() {
     if (cur) loadOrgMembers(cur.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cur?.id]);
+
+  useEffect(() => {
+    if (isSuperAdmin) loadAccessRequests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuperAdmin]);
 
   useEffect(() => {
     if (isSuperAdmin || hasOwnOrg) loadAllowedEmails();
@@ -86,6 +91,41 @@ export default function Orgs() {
               <input type="checkbox" checked={withBase} onChange={(e) => setWithBase(e.target.checked)} /> Incluir a base atual
               ({curBase.name}) na empresa
             </label>
+          )}
+        </div>
+      )}
+
+      {isSuperAdmin && (
+        <div className="panel" style={{ marginBottom: "1rem" }}>
+          <h2>Pedidos de acesso{accessRequests.some((r) => r.status === "pendente") ? ` (${accessRequests.filter((r) => r.status === "pendente").length} pendente${accessRequests.filter((r) => r.status === "pendente").length === 1 ? "" : "s"})` : ""}</h2>
+          <p className="muted small">Pedidos enviados pela página inicial. Aprovar libera o e-mail para criar a conta; a pessoa precisa ser avisada por você.</p>
+          {accessRequests.length === 0 ? (
+            <div className="infobox">Nenhum pedido até agora.</div>
+          ) : (
+            <div className="tablewrap">
+              <table className="drv">
+                <thead><tr><th>Quem</th><th>Contato</th><th>Bases</th><th>Mensagem</th><th>Situação</th><th></th></tr></thead>
+                <tbody>
+                  {accessRequests.map((r) => (
+                    <tr key={r.id}>
+                      <td><b>{r.nome}</b><div className="small muted">{new Date(r.created_at).toLocaleDateString("pt-BR")}</div></td>
+                      <td>{r.email}{r.telefone ? <div className="small muted">{r.telefone}</div> : null}</td>
+                      <td className="num">{r.bases ?? "—"}</td>
+                      <td className="small">{r.mensagem || "—"}</td>
+                      <td><span className={"badge " + (r.status === "aprovado" ? "ok" : r.status === "recusado" ? "bad" : "warn")}>{r.status}</span></td>
+                      <td>
+                        {r.status === "pendente" && (
+                          <>
+                            <button className="btn small primary" disabled={busy} onClick={() => run(() => decideAccess(r.id, true))}>Aprovar</button>{" "}
+                            <button className="btn small" disabled={busy} onClick={() => run(() => decideAccess(r.id, false))}>Recusar</button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

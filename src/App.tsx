@@ -5,7 +5,7 @@ import { DocaProvider, useDoca } from "./hooks/DocaContext";
 import { ToastProvider } from "./hooks/useToast";
 import { DialogProvider } from "./hooks/useDialog";
 import { useNav } from "./hooks/useNav";
-import Auth from "./components/Auth";
+import Landing from "./components/Landing";
 import ImportWizard from "./components/ImportWizard";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
@@ -22,6 +22,8 @@ import Membros from "./pages/Membros";
 import Orgs from "./pages/Orgs";
 import Geral from "./pages/Geral";
 import Saude from "./pages/Saude";
+import Painel from "./pages/Painel";
+import { ImportProvider } from "./components/ImportDialog";
 import Clientes from "./pages/Clientes";
 import Integracoes from "./pages/Integracoes";
 import Alertas from "./pages/Alertas";
@@ -33,9 +35,25 @@ import Precos from "./pages/Precos";
 import Cep from "./pages/Cep";
 import type { ScreenId } from "./lib/types";
 
+type Nav = ReturnType<typeof useNav>;
+
 function Shell() {
-  const { ready, bases, curBase, createBase, selectBase } = useDoca();
+  const { selectBase } = useDoca();
   const nav = useNav();
+  return (
+    <ImportProvider
+      onFinished={async (id, n) => {
+        if (id) await selectBase(id);
+        nav.openScreen(n > 1 ? "geral" : "painel");
+      }}
+    >
+      <ShellBody nav={nav} />
+    </ImportProvider>
+  );
+}
+
+function ShellBody({ nav }: { nav: Nav }) {
+  const { ready, bases, curBase, createBase, selectBase } = useDoca();
 
   if (!ready) return null;
 
@@ -49,7 +67,7 @@ function Shell() {
           <div className="panel" style={{ marginBottom: "1rem" }}>
             <h3>Já uso o JMS</h3>
             <p className="muted small">Arraste as planilhas exportadas. Eu encontro as bases, mostro para você confirmar e já preencho o histórico.</p>
-            <ImportWizard onDone={async (id) => { if (id) await selectBase(id); nav.openScreen("geral"); }} />
+            <ImportWizard onDone={async (id, n) => { if (id) await selectBase(id); nav.openScreen(n > 1 ? "geral" : "painel"); }} />
           </div>
           <div className="panel">
             <h3>Ainda não uso o JMS</h3>
@@ -86,6 +104,7 @@ function Shell() {
     bases: () => <Bases />,
     membros: () => <Membros />,
     orgs: () => <Orgs />,
+    painel: () => <Painel openScreen={nav.openScreen} />,
     geral: () => <Geral openScreen={nav.openScreen} />,
     saude: () => <Saude openScreen={nav.openScreen} />,
     clientes: () => <Clientes />,
@@ -137,7 +156,12 @@ export default function App() {
   const { user, loading } = useAuth();
 
   if (loading) return null;
-  if (!user) return <Auth />;
+  if (!user)
+    return (
+      <ToastProvider>
+        <Landing />
+      </ToastProvider>
+    );
 
   return (
     <ToastProvider>

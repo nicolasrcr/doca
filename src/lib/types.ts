@@ -49,6 +49,17 @@ export interface AllowedEmail {
   role: OrgRole | null;
 }
 
+export interface AccessRequest {
+  id: string;
+  nome: string;
+  email: string;
+  telefone: string | null;
+  bases: number | null;
+  mensagem: string | null;
+  status: "pendente" | "aprovado" | "recusado";
+  created_at: string;
+}
+
 export interface PaymentRule {
   id: string;
   base_id: string;
@@ -283,6 +294,7 @@ export interface SheetTable {
 }
 
 export const SCREEN_IDS = [
+  "painel",
   "geral",
   "saude",
   "ajustes",
@@ -307,6 +319,7 @@ export const SCREEN_IDS = [
 export type ScreenId = (typeof SCREEN_IDS)[number];
 
 export const SCREENS: Record<ScreenId, { label: string; cat: string }> = {
+  painel: { label: "Painel da base", cat: "indicadores" },
   geral: { label: "Visão geral das bases", cat: "indicadores" },
   saude: { label: "Saúde e sugestões da base", cat: "indicadores" },
   ajustes: { label: "Dados da base", cat: "infos" },
