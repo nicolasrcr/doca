@@ -20,6 +20,9 @@ import type {
   DriverAdjustment,
   Member,
   Occurrence,
+  OrgMember,
+  OrgRole,
+  Organization,
   Payout,
   PayoutBreakdownRow,
   PayoutItem,
@@ -39,6 +42,16 @@ interface DocaState {
   occurrences: Occurrence[];
   payouts: Payout[];
   members: Member[];
+  isSuperAdmin: boolean;
+  orgs: Organization[];
+  orgRoles: Record<string, OrgRole>;
+  orgMembers: OrgMember[];
+  loadOrgMembers: (orgId: string) => Promise<void>;
+  createOrganization: (name: string, adminEmail: string) => Promise<boolean>;
+  inviteOrgMember: (orgId: string, email: string, role: OrgRole) => Promise<boolean>;
+  updateOrgMemberRole: (orgId: string, userId: string, role: OrgRole) => Promise<void>;
+  removeOrgMember: (orgId: string, userId: string) => Promise<void>;
+  moveBaseToOrg: (baseId: string, orgId: string | null) => Promise<void>;
   paymentRules: PaymentRule[];
   specialDays: SpecialDay[];
   adjustments: DriverAdjustment[];
@@ -49,7 +62,7 @@ interface DocaState {
   result: ReturnType<typeof recompute>;
   coletaResult: ColetaResult | null;
   selectBase: (id: string) => Promise<void>;
-  createBase: (name: string) => Promise<string>;
+  createBase: (name: string, orgId?: string | null) => Promise<string>;
   updateBase: (fields: Partial<Base>) => Promise<void>;
   setDayDate: (d: string) => void;
   setSheetBase: (t: SheetTable | null) => void;
@@ -92,6 +105,10 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [orgs, setOrgs] = useState<Organization[]>([]);
+  const [orgRoles, setOrgRoles] = useState<Record<string, OrgRole>>({});
+  const [orgMembers, setOrgMembers] = useState<OrgMember[]>([]);
   const [paymentRules, setPaymentRules] = useState<PaymentRule[]>([]);
   const [specialDays, setSpecialDays] = useState<SpecialDay[]>([]);
   const [adjustments, setAdjustments] = useState<DriverAdjustment[]>([]);
@@ -119,10 +136,46 @@ export function DocaProvider({ children }: { children: ReactNode }) {
     setReady(true);
   }, [toast]);
 
+  const loadOrgs = useCallback(async () => {
+    if (!user) return;
+    const [{ data: sa }, { data: orgRows }, { data: mine }] = await Promise.all([
+      supabase.rpc("is_super_admin"),
+      supabase.from("organizations").select("id,name,created_at").order("name"),
+      supabase.from("org_members").select("org_id,role").eq("user_id", user.id),
+    ]);
+    setIsSuperAdmin(!!sa);
+    setOrgs((orgRows as Organization[]) || []);
+    setOrgRoles(Object.fromEntries(((mine as { org_id: string; role: OrgRole }[]) || []).map((r) => [r.org_id, r.role])));
+  }, [user]);
+
+  const loadOrgMembers = useCallback(
+    async (orgId: string) => {
+      const { data: rows, error } = await supabase.from("org_members").select("org_id,user_id,role").eq("org_id", orgId);
+      if (error) {
+        toast("Não consegui carregar os membros da organização: " + error.message);
+        return;
+      }
+      const ids = (rows || []).map((r) => r.user_id);
+      let profiles: { id: string; email: string }[] = [];
+      if (ids.length) {
+        const { data: pdata } = await supabase.from("profiles").select("id,email").in("id", ids);
+        profiles = pdata || [];
+      }
+      const emailOf = new Map(profiles.map((p) => [p.id, p.email]));
+      setOrgMembers((rows || []).map((r) => ({ ...r, email: emailOf.get(r.user_id) || "" })) as OrgMember[]);
+    },
+    [toast]
+  );
+
   useEffect(() => {
-    if (user) loadBases();
-    else {
+    if (user) {
+      loadBases();
+      loadOrgs();
+    } else {
       setBases([]);
+      setOrgs([]);
+      setOrgRoles({});
+      setIsSuperAdmin(false);
       setCurBase(null);
       setReady(true);
     }
@@ -243,13 +296,8 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   const loadRole = useCallback(
     async (baseId: string) => {
       if (!user) return;
-      const { data } = await supabase
-        .from("base_members")
-        .select("role")
-        .eq("base_id", baseId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setRole((data?.role as BaseRole) ?? "viewer");
+      const { data } = await supabase.rpc("base_role", { b_id: baseId });
+      setRole((data as BaseRole | null) ?? "viewer");
     },
     [user]
   );
@@ -298,11 +346,11 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   }, [ready, bases]);
 
   const createBase = useCallback(
-    async (name: string) => {
+    async (name: string, orgId?: string | null) => {
       if (!user) throw new Error("not signed in");
       const { data, error } = await supabase
         .from("bases")
-        .insert({ name: name.trim(), owner_id: user.id })
+        .insert({ name: name.trim(), owner_id: user.id, ...(orgId ? { org_id: orgId } : {}) })
         .select()
         .single();
       if (error) {
@@ -819,6 +867,73 @@ export function DocaProvider({ children }: { children: ReactNode }) {
     [curBase, toast, loadAdjustments]
   );
 
+  const createOrganization = useCallback(
+    async (name: string, adminEmail: string) => {
+      const { error } = await supabase.rpc("create_organization", { p_name: name.trim(), p_admin_email: adminEmail.trim() });
+      if (error) {
+        toast(error.message);
+        return false;
+      }
+      await loadOrgs();
+      toast("Organização criada");
+      return true;
+    },
+    [toast, loadOrgs]
+  );
+
+  const inviteOrgMember = useCallback(
+    async (orgId: string, email: string, role: OrgRole) => {
+      const { error } = await supabase.rpc("invite_org_member", { p_org_id: orgId, p_email: email.trim(), p_role: role });
+      if (error) {
+        toast(error.message);
+        return false;
+      }
+      await loadOrgMembers(orgId);
+      toast("Pessoa adicionada à organização");
+      return true;
+    },
+    [toast, loadOrgMembers]
+  );
+
+  const updateOrgMemberRole = useCallback(
+    async (orgId: string, userId: string, role: OrgRole) => {
+      const { error } = await supabase.rpc("update_org_member_role", { p_org_id: orgId, p_user_id: userId, p_role: role });
+      if (error) {
+        toast(error.message);
+        return;
+      }
+      await loadOrgMembers(orgId);
+      toast("Papel atualizado");
+    },
+    [toast, loadOrgMembers]
+  );
+
+  const removeOrgMember = useCallback(
+    async (orgId: string, userId: string) => {
+      const { error } = await supabase.from("org_members").delete().eq("org_id", orgId).eq("user_id", userId);
+      if (error) {
+        toast(error.message);
+        return;
+      }
+      await loadOrgMembers(orgId);
+      toast("Pessoa removida da organização");
+    },
+    [toast, loadOrgMembers]
+  );
+
+  const moveBaseToOrg = useCallback(
+    async (baseId: string, orgId: string | null) => {
+      const { error } = await supabase.from("bases").update({ org_id: orgId }).eq("id", baseId);
+      if (error) {
+        toast(error.message);
+        return;
+      }
+      await loadBases();
+      toast("Base atualizada");
+    },
+    [toast, loadBases]
+  );
+
   const value: DocaState = {
     ready,
     bases,
@@ -830,6 +945,16 @@ export function DocaProvider({ children }: { children: ReactNode }) {
     occurrences,
     payouts,
     members,
+    isSuperAdmin,
+    orgs,
+    orgRoles,
+    orgMembers,
+    loadOrgMembers,
+    createOrganization,
+    inviteOrgMember,
+    updateOrgMemberRole,
+    removeOrgMember,
+    moveBaseToOrg,
     paymentRules,
     specialDays,
     adjustments,

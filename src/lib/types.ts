@@ -10,6 +10,7 @@ export interface Base {
   theme: string;
   whatsapp_webhook: string;
   owner_id: string;
+  org_id?: string | null;
   created_at: string;
   role?: BaseRole;
   expurgar_insucessos?: boolean;
@@ -25,6 +26,21 @@ export interface Base {
   carga_desigual_max?: number; // fração da mediana de pacotes acima disso = aviso (ex.: 1.4)
   entrega_noturna_limite?: number; // hora do dia (0-23) a partir da qual conta como noturna (ex.: 20)
   entrega_noturna_min?: number; // quantidade mínima de entregas noturnas para gerar o alerta (ex.: 10)
+}
+
+export type OrgRole = "admin" | "editor" | "viewer";
+
+export interface Organization {
+  id: string;
+  name: string;
+  created_at?: string;
+}
+
+export interface OrgMember {
+  org_id: string;
+  user_id: string;
+  role: OrgRole;
+  email: string;
 }
 
 export interface PaymentRule {
@@ -264,6 +280,7 @@ export const SCREEN_IDS = [
   "qrconf",
   "bases",
   "membros",
+  "orgs",
   "clientes",
   "parados",
   "pendencias",
@@ -285,6 +302,7 @@ export const SCREENS: Record<ScreenId, { label: string; cat: string }> = {
   qrconf: { label: "Conferência QR", cat: "operacao" },
   bases: { label: "Minhas bases", cat: "gestaobases" },
   membros: { label: "Membros e permissões", cat: "gestaobases" },
+  orgs: { label: "Organizações", cat: "gestaobases" },
   clientes: { label: "Ocorrências", cat: "clientes" },
   parados: { label: "Pacotes parados (aging)", cat: "clientes" },
   pendencias: { label: "Pendências de hoje", cat: "clientes" },

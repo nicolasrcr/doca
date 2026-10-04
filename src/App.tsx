@@ -18,6 +18,7 @@ import Fechamento from "./pages/Fechamento";
 import Ajustes from "./pages/Ajustes";
 import Bases from "./pages/Bases";
 import Membros from "./pages/Membros";
+import Orgs from "./pages/Orgs";
 import Clientes from "./pages/Clientes";
 import Integracoes from "./pages/Integracoes";
 import Alertas from "./pages/Alertas";
@@ -74,6 +75,7 @@ function Shell() {
     ajustes: () => <Ajustes />,
     bases: () => <Bases />,
     membros: () => <Membros />,
+    orgs: () => <Orgs />,
     clientes: () => <Clientes />,
     integracoes: () => <Integracoes />,
     alertas: () => <Alertas openScreen={nav.openScreen} />,
