@@ -8,6 +8,7 @@ import SLAAlertBanner from "../components/SLAAlertBanner";
 import SLAAlertModal from "../components/SLAAlertModal";
 import type { ActiveScreen } from "../hooks/useNav";
 import { ImportStrip } from "../components/ImportDialog";
+import { CatIcon } from "../components/Icons";
 
 export default function Home({ openScreen }: { openScreen: (id: ActiveScreen) => void }) {
   const { curBase, result, history, occRows, payouts, drivers, bases, dayDate } = useDoca();
@@ -131,7 +132,7 @@ export default function Home({ openScreen }: { openScreen: (id: ActiveScreen) =>
                 if (first) openScreen(first);
               }}
             >
-              <span className="ic">{cat.icon}</span>
+              <span className="ic"><CatIcon id={cat.id} size={20} /></span>
               <span>
                 <span className="mtitle">{cat.label}</span>
                 <br />
