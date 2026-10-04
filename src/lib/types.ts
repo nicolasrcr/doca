@@ -10,6 +10,7 @@ export interface Base {
   theme: string;
   whatsapp_webhook: string;
   owner_id: string;
+  org_id?: string | null;
   created_at: string;
   role?: BaseRole;
   expurgar_insucessos?: boolean;
@@ -25,6 +26,27 @@ export interface Base {
   carga_desigual_max?: number; // fração da mediana de pacotes acima disso = aviso (ex.: 1.4)
   entrega_noturna_limite?: number; // hora do dia (0-23) a partir da qual conta como noturna (ex.: 20)
   entrega_noturna_min?: number; // quantidade mínima de entregas noturnas para gerar o alerta (ex.: 10)
+}
+
+export type OrgRole = "admin" | "editor" | "viewer";
+
+export interface Organization {
+  id: string;
+  name: string;
+  created_at?: string;
+}
+
+export interface OrgMember {
+  org_id: string;
+  user_id: string;
+  role: OrgRole;
+  email: string;
+}
+
+export interface AllowedEmail {
+  email: string;
+  org_id: string | null;
+  role: OrgRole | null;
 }
 
 export interface PaymentRule {
@@ -101,6 +123,8 @@ export interface DayRecord {
   divergentes?: number; // pacotes com motorista divergente entre bipagem e carta de porte
   pagamentos?: Record<string, number>; // forma de pagamento -> contagem
   tipos_produto?: Record<string, number>; // tipo de produto -> contagem
+  carta_ok?: boolean; // false = faltou a Carta de porte: entregues/pendentes do dia não são confiáveis
+  bairros?: Record<string, { total: number; e: number; p: number; n: number }>; // estatística por bairro
 }
 
 export type OccurrenceStatus = "aberto" | "tratando" | "barrado" | "devolvido" | "resolvido";
@@ -258,12 +282,15 @@ export interface SheetTable {
 }
 
 export const SCREEN_IDS = [
+  "geral",
+  "saude",
   "ajustes",
   "entregas",
   "conferencia",
   "qrconf",
   "bases",
   "membros",
+  "orgs",
   "clientes",
   "parados",
   "pendencias",
@@ -279,12 +306,15 @@ export const SCREEN_IDS = [
 export type ScreenId = (typeof SCREEN_IDS)[number];
 
 export const SCREENS: Record<ScreenId, { label: string; cat: string }> = {
+  geral: { label: "Visão geral das bases", cat: "indicadores" },
+  saude: { label: "Saúde e sugestões da base", cat: "indicadores" },
   ajustes: { label: "Dados da base", cat: "infos" },
   entregas: { label: "Monitoramento de bipagem de entrega", cat: "operacao" },
   conferencia: { label: "Conferência de carga", cat: "operacao" },
   qrconf: { label: "Conferência QR", cat: "operacao" },
   bases: { label: "Minhas bases", cat: "gestaobases" },
   membros: { label: "Membros e permissões", cat: "gestaobases" },
+  orgs: { label: "Empresa e equipe", cat: "gestaobases" },
   clientes: { label: "Ocorrências", cat: "clientes" },
   parados: { label: "Pacotes parados (aging)", cat: "clientes" },
   pendencias: { label: "Pendências de hoje", cat: "clientes" },

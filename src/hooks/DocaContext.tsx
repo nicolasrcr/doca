@@ -11,8 +11,12 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "./useAuth";
 import { useToast } from "./useToast";
 import { buildAliasIndex, canonicalDriver, computeColeta, recompute, type ColetaResult } from "../lib/compute";
-import { todayISO } from "../lib/format";
+import { norm, todayISO } from "../lib/format";
+import { buildDayRow } from "../lib/dayRow";
+import { computeGroup, consolidate, type ImportItem } from "../lib/importer";
+import type { SheetTable as ImportSheet } from "../lib/types";
 import type {
+  AllowedEmail,
   Base,
   BaseRole,
   DayRecord,
@@ -20,6 +24,9 @@ import type {
   DriverAdjustment,
   Member,
   Occurrence,
+  OrgMember,
+  OrgRole,
+  Organization,
   Payout,
   PayoutBreakdownRow,
   PayoutItem,
@@ -39,6 +46,27 @@ interface DocaState {
   occurrences: Occurrence[];
   payouts: Payout[];
   members: Member[];
+  isSuperAdmin: boolean;
+  orgs: Organization[];
+  orgRoles: Record<string, OrgRole>;
+  orgMembers: OrgMember[];
+  loadOrgMembers: (orgId: string) => Promise<void>;
+  allowedEmails: AllowedEmail[];
+  loadAllowedEmails: () => Promise<void>;
+  inviteToOrg: (orgId: string, email: string, role: OrgRole) => Promise<"added" | "pending" | null>;
+  authorizeEmail: (email: string) => Promise<boolean>;
+  removeAllowedEmail: (email: string) => Promise<void>;
+  createMyOrganization: (name: string, baseId?: string | null) => Promise<boolean>;
+  importBases: (
+    items: ImportItem[],
+    carta: ImportSheet | null,
+    opts: { orgId?: string | null; companyName?: string | null }
+  ) => Promise<{ created: number; existing: number; days: number; firstBaseId: string | null } | null>;
+  createOrganization: (name: string, adminEmail: string) => Promise<boolean>;
+  inviteOrgMember: (orgId: string, email: string, role: OrgRole) => Promise<boolean>;
+  updateOrgMemberRole: (orgId: string, userId: string, role: OrgRole) => Promise<void>;
+  removeOrgMember: (orgId: string, userId: string) => Promise<void>;
+  moveBaseToOrg: (baseId: string, orgId: string | null) => Promise<void>;
   paymentRules: PaymentRule[];
   specialDays: SpecialDay[];
   adjustments: DriverAdjustment[];
@@ -49,7 +77,7 @@ interface DocaState {
   result: ReturnType<typeof recompute>;
   coletaResult: ColetaResult | null;
   selectBase: (id: string) => Promise<void>;
-  createBase: (name: string) => Promise<string>;
+  createBase: (name: string, orgId?: string | null) => Promise<string>;
   updateBase: (fields: Partial<Base>) => Promise<void>;
   setDayDate: (d: string) => void;
   setSheetBase: (t: SheetTable | null) => void;
@@ -92,6 +120,11 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [orgs, setOrgs] = useState<Organization[]>([]);
+  const [orgRoles, setOrgRoles] = useState<Record<string, OrgRole>>({});
+  const [orgMembers, setOrgMembers] = useState<OrgMember[]>([]);
+  const [allowedEmails, setAllowedEmails] = useState<AllowedEmail[]>([]);
   const [paymentRules, setPaymentRules] = useState<PaymentRule[]>([]);
   const [specialDays, setSpecialDays] = useState<SpecialDay[]>([]);
   const [adjustments, setAdjustments] = useState<DriverAdjustment[]>([]);
@@ -119,10 +152,46 @@ export function DocaProvider({ children }: { children: ReactNode }) {
     setReady(true);
   }, [toast]);
 
+  const loadOrgs = useCallback(async () => {
+    if (!user) return;
+    const [{ data: sa }, { data: orgRows }, { data: mine }] = await Promise.all([
+      supabase.rpc("is_super_admin"),
+      supabase.from("organizations").select("id,name,created_at").order("name"),
+      supabase.from("org_members").select("org_id,role").eq("user_id", user.id),
+    ]);
+    setIsSuperAdmin(!!sa);
+    setOrgs((orgRows as Organization[]) || []);
+    setOrgRoles(Object.fromEntries(((mine as { org_id: string; role: OrgRole }[]) || []).map((r) => [r.org_id, r.role])));
+  }, [user]);
+
+  const loadOrgMembers = useCallback(
+    async (orgId: string) => {
+      const { data: rows, error } = await supabase.from("org_members").select("org_id,user_id,role").eq("org_id", orgId);
+      if (error) {
+        toast("Não consegui carregar os membros da organização: " + error.message);
+        return;
+      }
+      const ids = (rows || []).map((r) => r.user_id);
+      let profiles: { id: string; email: string }[] = [];
+      if (ids.length) {
+        const { data: pdata } = await supabase.from("profiles").select("id,email").in("id", ids);
+        profiles = pdata || [];
+      }
+      const emailOf = new Map(profiles.map((p) => [p.id, p.email]));
+      setOrgMembers((rows || []).map((r) => ({ ...r, email: emailOf.get(r.user_id) || "" })) as OrgMember[]);
+    },
+    [toast]
+  );
+
   useEffect(() => {
-    if (user) loadBases();
-    else {
+    if (user) {
+      loadBases();
+      loadOrgs();
+    } else {
       setBases([]);
+      setOrgs([]);
+      setOrgRoles({});
+      setIsSuperAdmin(false);
       setCurBase(null);
       setReady(true);
     }
@@ -243,13 +312,8 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   const loadRole = useCallback(
     async (baseId: string) => {
       if (!user) return;
-      const { data } = await supabase
-        .from("base_members")
-        .select("role")
-        .eq("base_id", baseId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setRole((data?.role as BaseRole) ?? "viewer");
+      const { data } = await supabase.rpc("base_role", { b_id: baseId });
+      setRole((data as BaseRole | null) ?? "viewer");
     },
     [user]
   );
@@ -298,11 +362,11 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   }, [ready, bases]);
 
   const createBase = useCallback(
-    async (name: string) => {
+    async (name: string, orgId?: string | null) => {
       if (!user) throw new Error("not signed in");
       const { data, error } = await supabase
         .from("bases")
-        .insert({ name: name.trim(), owner_id: user.id })
+        .insert({ name: name.trim(), owner_id: user.id, ...(orgId ? { org_id: orgId } : {}) })
         .select()
         .single();
       if (error) {
@@ -369,51 +433,14 @@ export function DocaProvider({ children }: { children: ReactNode }) {
 
   const saveDay = useCallback(async () => {
     if (!curBase || !result) return false;
-    // Agregados avançados do dia — persistidos para virar tendência em Histórico
-    // (sem isso, tipo de produto/pagamento/peso/SLA se perdiam ao salvar o dia).
-    const itens = result.list.flatMap((d) => d.itens);
-    const comHorarios = itens.filter((it) => it.hr_saida && it.hr_chegada);
-    const slaOk = comHorarios.filter((it) => it.sla_ok).length;
-    const pesoTotal = itens.reduce((a, it) => a + (it.peso || 0), 0);
-    const pagamentos: Record<string, number> = {};
-    const tiposProduto: Record<string, number> = {};
-    for (const it of itens) {
-      if (it.pagamento) pagamentos[it.pagamento] = (pagamentos[it.pagamento] || 0) + 1;
-      if (it.tipo_produto) tiposProduto[it.tipo_produto] = (tiposProduto[it.tipo_produto] || 0) + 1;
-    }
-    const row = {
-      base_id: curBase.id,
+    const row = buildDayRow({
+      baseId: curBase.id,
       data: dayDate,
       meta: curBase.meta,
-      total: result.tot.t,
-      entregues: result.tot.e,
-      problemas: result.tot.p,
-      pendentes: result.tot.n,
-      motoristas: result.list.map((d) => ({
-        n: d.nome,
-        t: d.t,
-        e: d.e,
-        p: d.p,
-        q: d.n,
-        b: result.porBairro[d.nome] || {},
-      })),
-      motivos: result.motivos,
-      salvo_por: user?.email || "",
-      linhas_descartadas: result.linhasDescartadas,
-      coleta_total: coletaResult?.total || 0,
-      coleta_feita: coletaResult?.feita || 0,
-      coleta_falha_bipagem: coletaResult?.falhaBipagem || 0,
-      retido_base: result.tot.retidoBase,
-      devolucao: result.tot.devolucao,
-      com_assinatura: result.tot.comAssinatura,
-      sla_ok: slaOk,
-      sla_total: comHorarios.length,
-      peso_total: pesoTotal,
-      bloqueados: result.bloqueados.length,
-      divergentes: result.divergentes.length,
-      pagamentos,
-      tipos_produto: tiposProduto,
-    };
+      salvoPor: user?.email || "",
+      result,
+      coleta: coletaResult,
+    });
     const { error } = await supabase.from("days").upsert(row, { onConflict: "base_id,data" });
     if (error) {
       toast("Não consegui salvar o dia: " + error.message);
@@ -538,6 +565,16 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   const generatePayout = useCallback(
     async (start: string, end: string) => {
       if (!curBase) return null;
+      const incompletos = history.filter((h) => h.data >= start && h.data <= end && h.carta_ok === false);
+      if (incompletos.length) {
+        toast(
+          `Não dá para gerar o fechamento: faltou a Carta de porte em ${incompletos.length} dia${incompletos.length === 1 ? "" : "s"} do período (${incompletos
+            .slice(0, 5)
+            .map((h) => h.data.split("-").reverse().slice(0, 2).join("/"))
+            .join(", ")}${incompletos.length > 5 ? "…" : ""}). Importe a Carta de porte e salve o dia de novo.`
+        );
+        return null;
+      }
       const byDriver = new Map<string, { deliveries: number; breakdown: PayoutBreakdownRow[]; pendente: boolean }>();
 
       for (const h of history) {
@@ -722,7 +759,12 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   const removeMember = useCallback(
     async (userId: string) => {
       if (!curBase) return;
-      const { error } = await supabase.rpc("remove_member", { p_base_id: curBase.id, p_user_id: userId });
+      const { error } = await supabase
+        .from("base_members")
+        .delete()
+        .eq("base_id", curBase.id)
+        .eq("user_id", userId)
+        .neq("role", "owner");
       if (error) {
         toast(error.message);
         return;
@@ -819,6 +861,200 @@ export function DocaProvider({ children }: { children: ReactNode }) {
     [curBase, toast, loadAdjustments]
   );
 
+  const createOrganization = useCallback(
+    async (name: string, adminEmail: string) => {
+      const { error } = await supabase.rpc("create_organization", { p_name: name.trim(), p_admin_email: adminEmail.trim() });
+      if (error) {
+        toast(error.message);
+        return false;
+      }
+      await loadOrgs();
+      toast("Organização criada");
+      return true;
+    },
+    [toast, loadOrgs]
+  );
+
+  const inviteOrgMember = useCallback(
+    async (orgId: string, email: string, role: OrgRole) => {
+      const { error } = await supabase.rpc("invite_org_member", { p_org_id: orgId, p_email: email.trim(), p_role: role });
+      if (error) {
+        toast(error.message);
+        return false;
+      }
+      await loadOrgMembers(orgId);
+      toast("Pessoa adicionada à organização");
+      return true;
+    },
+    [toast, loadOrgMembers]
+  );
+
+  const updateOrgMemberRole = useCallback(
+    async (orgId: string, userId: string, role: OrgRole) => {
+      const { error } = await supabase.rpc("update_org_member_role", { p_org_id: orgId, p_user_id: userId, p_role: role });
+      if (error) {
+        toast(error.message);
+        return;
+      }
+      await loadOrgMembers(orgId);
+      toast("Papel atualizado");
+    },
+    [toast, loadOrgMembers]
+  );
+
+  const removeOrgMember = useCallback(
+    async (orgId: string, userId: string) => {
+      const { error } = await supabase.from("org_members").delete().eq("org_id", orgId).eq("user_id", userId);
+      if (error) {
+        toast(error.message);
+        return;
+      }
+      await loadOrgMembers(orgId);
+      toast("Pessoa removida da organização");
+    },
+    [toast, loadOrgMembers]
+  );
+
+  const moveBaseToOrg = useCallback(
+    async (baseId: string, orgId: string | null) => {
+      const { error } = await supabase.from("bases").update({ org_id: orgId }).eq("id", baseId);
+      if (error) {
+        toast(error.message);
+        return;
+      }
+      await loadBases();
+      toast("Base atualizada");
+    },
+    [toast, loadBases]
+  );
+
+  const loadAllowedEmails = useCallback(async () => {
+    const { data } = await supabase.from("allowed_emails").select("email,org_id,role").order("email");
+    setAllowedEmails((data as AllowedEmail[]) || []);
+  }, []);
+
+  const inviteToOrg = useCallback(
+    async (orgId: string, email: string, role: OrgRole) => {
+      const { data, error } = await supabase.rpc("invite_to_org", { p_org_id: orgId, p_email: email.trim(), p_role: role });
+      if (error) {
+        toast(error.message);
+        return null;
+      }
+      await Promise.all([loadOrgMembers(orgId), loadAllowedEmails()]);
+      toast(data === "pending" ? "Convite criado. A pessoa entra assim que criar a conta com esse e-mail." : "Pessoa adicionada à empresa");
+      return data as "added" | "pending";
+    },
+    [toast, loadOrgMembers, loadAllowedEmails]
+  );
+
+  const authorizeEmail = useCallback(
+    async (email: string) => {
+      const { error } = await supabase.rpc("allow_email", { p_email: email.trim() });
+      if (error) {
+        toast(error.message);
+        return false;
+      }
+      await loadAllowedEmails();
+      toast("E-mail autorizado a criar conta");
+      return true;
+    },
+    [toast, loadAllowedEmails]
+  );
+
+  const removeAllowedEmail = useCallback(
+    async (email: string) => {
+      const { error } = await supabase.from("allowed_emails").delete().eq("email", email);
+      if (error) {
+        toast(error.message);
+        return;
+      }
+      await loadAllowedEmails();
+    },
+    [toast, loadAllowedEmails]
+  );
+
+  const createMyOrganization = useCallback(
+    async (name: string, baseId?: string | null) => {
+      const { error } = await supabase.rpc("create_my_organization", { p_name: name.trim(), p_base_id: baseId || null });
+      if (error) {
+        toast(error.message);
+        return false;
+      }
+      await Promise.all([loadOrgs(), loadBases()]);
+      toast("Empresa criada");
+      return true;
+    },
+    [toast, loadOrgs, loadBases]
+  );
+
+  const importBases = useCallback(
+    async (items: ImportItem[], carta: ImportSheet | null, opts: { orgId?: string | null; companyName?: string | null }) => {
+      if (!user) return null;
+      let merged: ImportItem[];
+      try {
+        merged = consolidate(items);
+      } catch (e) {
+        toast((e as Error).message);
+        return null;
+      }
+      let orgId = opts.orgId || null;
+      if (opts.companyName?.trim()) {
+        const { data, error } = await supabase.rpc("create_my_organization", { p_name: opts.companyName.trim(), p_base_id: null });
+        if (error) {
+          toast(error.message);
+          return null;
+        }
+        orgId = data as string;
+      }
+      const ids = new Map<string, { id: string; meta: number }>();
+      let created = 0;
+      let existing = 0;
+      let days = 0;
+      let firstBaseId: string | null = null;
+      for (const it of merged) {
+        const key = norm(it.name);
+        let b = ids.get(key);
+        if (!b) {
+          const found = bases.find((x) => norm(x.name) === key);
+          if (found) {
+            b = { id: found.id, meta: found.meta ?? 95 };
+            existing++;
+          } else {
+            const { data, error } = await supabase
+              .from("bases")
+              .insert({
+                name: it.name.trim(),
+                owner_id: user.id,
+                ...(it.meta && it.meta >= 50 && it.meta <= 100 ? { meta: it.meta } : {}),
+                ...(orgId ? { org_id: orgId } : {}),
+              })
+              .select()
+              .single();
+            if (error) {
+              toast(`Não consegui criar a base "${it.name}": ${error.message}`);
+              continue;
+            }
+            b = { id: (data as Base).id, meta: (data as Base).meta ?? 95 };
+            created++;
+          }
+          ids.set(key, b);
+          firstBaseId = firstBaseId || b.id;
+        }
+        // Sem a Carta de porte o dia é salvo marcado como incompleto (carta_ok = false): as telas
+        // mostram o alerta de dado faltando em vez de um 0% enganoso.
+        const result = computeGroup(it.table, carta);
+        if (!result) continue;
+        const row = buildDayRow({ baseId: b.id, data: it.date, meta: b.meta, salvoPor: user.email || "", result });
+        const { error } = await supabase.from("days").upsert(row, { onConflict: "base_id,data" });
+        if (error) toast(`Não consegui salvar o dia de "${it.name}": ${error.message}`);
+        else days++;
+      }
+      await Promise.all([loadBases(), loadOrgs()]);
+      return { created, existing, days, firstBaseId };
+    },
+    [user, bases, toast, loadBases, loadOrgs]
+  );
+
   const value: DocaState = {
     ready,
     bases,
@@ -830,6 +1066,23 @@ export function DocaProvider({ children }: { children: ReactNode }) {
     occurrences,
     payouts,
     members,
+    isSuperAdmin,
+    orgs,
+    orgRoles,
+    orgMembers,
+    loadOrgMembers,
+    allowedEmails,
+    loadAllowedEmails,
+    inviteToOrg,
+    authorizeEmail,
+    removeAllowedEmail,
+    createMyOrganization,
+    importBases,
+    createOrganization,
+    inviteOrgMember,
+    updateOrgMemberRole,
+    removeOrgMember,
+    moveBaseToOrg,
     paymentRules,
     specialDays,
     adjustments,

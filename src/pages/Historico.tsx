@@ -20,9 +20,11 @@ export default function Historico() {
     return [...agg.entries()].map(([n, v]) => ({ n, ...v })).sort((a, b) => b.pago - a.pago);
   }, [payouts]);
 
+  const incompletos = useMemo(() => history.filter((h) => h.carta_ok === false), [history]);
   const H = useMemo(() => {
+    const completos = history.filter((h) => h.carta_ok !== false);
     const per = parseInt(period, 10);
-    return per ? history.slice(-per) : history.slice();
+    return per ? completos.slice(-per) : completos.slice();
   }, [history, period]);
 
   const meta = curBase ? curBase.meta / 100 : 0.95;
@@ -147,6 +149,13 @@ export default function Historico() {
 
   return (
     <section className="pane active">
+      {incompletos.length > 0 && (
+        <div className="warnbox" style={{ marginBottom: "1rem" }}>
+          <b>Faltam dados de entrega em {incompletos.length} dia{incompletos.length === 1 ? "" : "s"}</b> ({incompletos.slice(-6).map((h) => brDate(h.data)).join(", ")}
+          {incompletos.length > 6 ? "…" : ""}): a Carta de porte não foi importada, então esses dias ficam fora dos gráficos de entrega. Importe a Carta de porte
+          em Operação e salve o dia de novo para completar a análise.
+        </div>
+      )}
       <div className="row" style={{ marginBottom: ".75rem" }}>
         <h2>Histórico da base</h2>
         <span className="spacer"></span>
