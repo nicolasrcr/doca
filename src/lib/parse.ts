@@ -3,7 +3,15 @@ import type { SheetTable } from "./types";
 
 function cellVal(v: unknown): string {
   if (v == null) return "";
-  if (v instanceof Date) return v.toISOString();
+  // O leitor de .xlsx entrega as datas como UTC, mas o valor guardado é o horário "de parede" da
+  // planilha (08:11 é 08:11 mesmo). Se virasse ISO com "Z", o navegador de Brasília mostraria 05:11
+  // e os alertas de horário (início tardio, entrega noturna) ficariam errados. Escrevemos o horário
+  // exatamente como está na planilha, sem fuso, e o app o interpreta como horário local.
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return "";
+    const p2 = (n: number) => String(n).padStart(2, "0");
+    return `${v.getUTCFullYear()}-${p2(v.getUTCMonth() + 1)}-${p2(v.getUTCDate())} ${p2(v.getUTCHours())}:${p2(v.getUTCMinutes())}:${p2(v.getUTCSeconds())}`;
+  }
   if (typeof v === "object") {
     const o = v as Record<string, unknown>;
     if (o.richText && Array.isArray(o.richText)) return (o.richText as { text: string }[]).map((t) => t.text).join("");
@@ -149,6 +157,13 @@ export const ALIAS: Record<string, string[]> = {
     "bairro destinatario",
     "bairro",
   ],
+  cep: [
+    "cep destinatario",
+    "cep do destinatario",
+    "cep de entrega",
+    "codigo postal destinatario",
+    "cep",
+  ],
   tipo_produto: [
     "tipo de produto",
     "tipo",
@@ -225,16 +240,18 @@ export function cleanText(s: string | null | undefined): string {
     .trim();
 }
 
-export type JmsReportType = "bipagem" | "carta_porte" | "desconhecido";
+export type JmsReportType = "bipagem" | "carta_porte" | "enderecos" | "desconhecido";
 
 // Detecta qual dos dois relatórios do JMS foi carregado, pelas colunas presentes —
 // não pelo nome do arquivo — para que o franqueado possa soltar os dois arquivos em
 // qualquer ordem e o Doca identifique e mescle sozinho.
 export function detectReportType(rows: string[][]): JmsReportType {
-  const t = prepare(rows, ["cod", "ent", "prob", "responsavel", "status_carta"], {});
+  const t = prepare(rows, ["cod", "ent", "prob", "responsavel", "status_carta", "distrito", "cep"], {});
   if (t.map.cod < 0) return "desconhecido";
   if (t.map.ent >= 0 && t.map.prob >= 0) return "bipagem";
   if (t.map.responsavel >= 0 && t.map.status_carta >= 0) return "carta_porte";
+  // relatório só com endereço do destinatário (distrito/bairro ou CEP) por pedido
+  if (t.map.distrito >= 0 || t.map.cep >= 0) return "enderecos";
   return "desconhecido";
 }
 

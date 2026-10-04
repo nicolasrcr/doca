@@ -152,6 +152,14 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
               onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }} />
           </label>
         </div>
+        {scan.enderecos > 0 ? (
+          <div className="okbox">Achei o bairro/CEP do destinatário de {fmtN(scan.enderecos)} pedidos: a análise de rotas por bairro fica disponível.</div>
+        ) : (
+          <div className="infobox">
+            Opcional: para a análise de <b>rotas e bairros críticos</b>, adicione também um relatório do JMS que traga o <b>distrito/bairro ou o CEP do
+            destinatário</b> de cada pedido (com “+ Adicionar mais arquivos”). Sem ele, o resto da análise funciona normalmente.
+          </div>
+        )}
         {scan.ignored.length > 0 && (
           <div className="warnbox">Ignorei {scan.ignored.length} arquivo(s) que não parecem relatórios do JMS: {scan.ignored.join(", ")}</div>
         )}
@@ -254,8 +262,8 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
         {step === "scanning" ? "Lendo as planilhas…" : "Arraste aqui as planilhas do JMS"}
       </h3>
       <p className="muted small">
-        Pode soltar vários arquivos de uma vez, de várias bases. Usamos o “Monitoramento de bipagem de entrega” e,
-        se tiver, a “Carta de porte” (.xlsx ou .csv).
+        Pode soltar vários arquivos de uma vez, de várias bases. Usamos o “Monitoramento de bipagem de entrega”, a
+        “Carta de porte” e, se tiver, um relatório com o distrito ou CEP do destinatário (.xlsx ou .csv).
       </p>
       {step !== "scanning" && (
         <input ref={inputRef} type="file" multiple accept=".xlsx,.xls,.csv" onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }} />

@@ -1,6 +1,6 @@
 import { norm, todayISO } from "./format";
 import { detectReportType, prepare, readRows } from "./parse";
-import { parseDateTime, recompute } from "./compute";
+import { mae, parseDateTime, recompute } from "./compute";
 import type { DayResult, Driver, SheetTable } from "./types";
 
 export const BASE_KEYS = ["cod", "ent", "prob", "base", "distrito", "hr_saida", "hr_chegada", "retencao", "tipo_produto", "peso", "assinante", "origem", "bloqueado", "hr_problema"];
@@ -20,6 +20,7 @@ export interface ImportScan {
   groups: ImportGroup[];
   carta: SheetTable | null;
   ignored: string[]; // arquivos que não parecem relatório do JMS
+  enderecos: number; // pedidos para os quais achamos bairro/CEP do destinatário
 }
 
 const noDrivers = new Map<string, Driver>();
@@ -56,6 +57,38 @@ export function computeGroup(table: SheetTable, carta: SheetTable | null): DayRe
 
 const sig = (t: SheetTable) => JSON.stringify(t.map);
 
+// Rótulo do local: o distrito/bairro quando existe; senão a região do CEP (5 primeiros dígitos),
+// que já separa bem as áreas de uma cidade sem precisar consultar nenhum serviço externo.
+function addressLabel(distrito: string | undefined, cep: string | undefined): string {
+  const d = (distrito || "").trim();
+  if (d) return d;
+  const digits = (cep || "").replace(/\D/g, "");
+  return digits.length >= 5 ? `CEP ${digits.slice(0, 5)}-xxx` : "";
+}
+
+// Preenche a coluna de distrito da bipagem com os endereços achados (cria a coluna se não existir).
+function applyAddresses(t: SheetTable, addr: Map<string, string>): number {
+  if (t.map.cod < 0) return 0;
+  if (t.map.distrito < 0) {
+    const idx = t.headers.length;
+    t.headers = [...t.headers, "Distrito destinatário (importado)"];
+    t.map = { ...t.map, distrito: idx };
+    t.data = t.data.map((r) => { const x = r.slice(); while (x.length < idx) x.push(""); x[idx] = ""; return x; });
+  }
+  let n = 0;
+  const col = t.map.distrito;
+  t.data = t.data.map((r) => {
+    if ((r[col] || "").trim()) return r;
+    const label = addr.get(mae(r[t.map.cod] || ""));
+    if (!label) return r;
+    const x = r.slice();
+    x[col] = label;
+    n++;
+    return x;
+  });
+  return n;
+}
+
 // Junta tabelas com o mesmo formato (mesmas colunas) em uma só; mantém separadas se o formato difere.
 function mergeTables(list: SheetTable[]): SheetTable[] {
   const out: SheetTable[] = [];
@@ -71,18 +104,33 @@ export async function scanJmsFiles(files: File[]): Promise<ImportScan> {
   const bip: SheetTable[] = [];
   const cartas: SheetTable[] = [];
   const ignored: string[] = [];
+  const addr = new Map<string, string>(); // pedido -> bairro (ou região do CEP)
   for (const f of files) {
     try {
       const rows = await readRows(f);
       const type = detectReportType(rows);
+      // qualquer relatório com pedido + distrito/CEP do destinatário alimenta a análise de rotas
+      const at = prepare(rows, ["cod", "distrito", "cep"], {});
+      let usado = false;
+      if (at.map.cod >= 0 && (at.map.distrito >= 0 || at.map.cep >= 0)) {
+        for (const r of at.data) {
+          const c = mae(r[at.map.cod] || "");
+          if (!c || addr.has(c)) continue;
+          const label = addressLabel(at.map.distrito >= 0 ? r[at.map.distrito] : "", at.map.cep >= 0 ? r[at.map.cep] : "");
+          if (label) addr.set(c, label);
+        }
+        usado = addr.size > 0;
+      }
       if (type === "bipagem") bip.push(prepare(rows, BASE_KEYS, { cod: 0, ent: 4, prob: 8 }));
       else if (type === "carta_porte") cartas.push(prepare(rows, ENT_KEYS, { cod: 0 }));
-      else ignored.push(f.name);
+      else if (!usado) ignored.push(f.name);
     } catch (e) {
       ignored.push(`${f.name} (${e instanceof Error ? e.message : "erro ao ler"})`);
     }
   }
   const carta = mergeTables(cartas).sort((a, b) => b.data.length - a.data.length)[0] || null;
+  let enderecos = 0;
+  if (addr.size) for (const t of bip) enderecos += applyAddresses(t, addr);
 
   // separa cada arquivo de bipagem por base (coluna "Base de entrega") e junta a mesma base entre arquivos
   const byBase = new Map<string, { name: string; tables: SheetTable[] }>();
@@ -121,7 +169,7 @@ export async function scanJmsFiles(files: File[]): Promise<ImportScan> {
     }
   }
   groups.sort((a, b) => b.total - a.total);
-  return { groups, carta, ignored };
+  return { groups, carta, ignored, enderecos };
 }
 
 export interface ImportItem {
