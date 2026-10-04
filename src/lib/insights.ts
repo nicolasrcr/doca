@@ -260,6 +260,73 @@ export function analisarBase(days: DayRecord[], base: Partial<Base>, periodo: nu
     add({ id: "fortes", area: "motoristas", nivel: "info", titulo: `Melhores resultados: ${nomes(fortes)}`, detalhe: fortes.slice(0, 2).map((m) => `${m.nome} ${pctTxt(m.pct)} (${nTxt(m.t)} pacotes)`).join(" · "), acao: "Bons candidatos para pegar as rotas mais difíceis e para apoiar quem está abaixo da meta." });
   }
 
+  // ── Horários (saída, 1ª entrega, entregas à noite, ritmo)
+  const comHor = ok.filter((d) => d.horarios && Object.keys(d.horarios).length);
+  if (comHor.length) {
+    const limTardio = base.inicio_tardio_aviso_h ?? 4;
+    const limCritico = base.inicio_tardio_critico_h ?? 6;
+    const multRitmo = base.ritmo_multiplicador ?? 2;
+    const minNoturna = base.entrega_noturna_min ?? 10;
+    const hm = (txt: string | null) => { if (!txt) return null; const [h, m] = txt.split(":").map(Number); return Number.isFinite(h) ? h * 60 + (m || 0) : null; };
+    const fmtHM = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(Math.round(min % 60)).padStart(2, "0")}`;
+    const porMot = new Map<string, { tardios: number; maxTardio: number; noturnas: number; ritmos: number; dias: number }>();
+    const fins: number[] = [];
+    for (const d of comHor) {
+      const rit = Object.values(d.horarios!).map((x) => x.entregasPorHora).filter((v) => v > 0).sort((x, y) => x - y);
+      const medRit = rit.length ? rit[Math.floor(rit.length / 2)] : 0;
+      for (const [nome, st] of Object.entries(d.horarios!)) {
+        const x = porMot.get(nome) || { tardios: 0, maxTardio: 0, noturnas: 0, ritmos: 0, dias: 0 };
+        x.dias++;
+        if (st.saidaAtePrimeiraH != null && st.saidaAtePrimeiraH >= limTardio) { x.tardios++; x.maxTardio = Math.max(x.maxTardio, st.saidaAtePrimeiraH); }
+        x.noturnas += st.noturnas || 0;
+        if (medRit > 0 && st.entregasPorHora >= medRit * multRitmo) x.ritmos++;
+        porMot.set(nome, x);
+        const fim = hm(st.ultimaEntrega);
+        if (fim != null) fins.push(fim);
+      }
+    }
+    const tardios = [...porMot.entries()].filter(([, x]) => x.tardios > 0).sort((x, y) => y[1].tardios - x[1].tardios || y[1].maxTardio - x[1].maxTardio);
+    for (const [nome, x] of tardios.slice(0, 3)) {
+      add({
+        id: `tardio-${nome}`,
+        area: "rotas",
+        nivel: x.maxTardio >= limCritico || x.tardios >= LIMITES.minDiasRecorrente ? "critico" : "aviso",
+        titulo: `${nome} leva muito tempo entre a saída e a 1ª entrega`,
+        detalhe: `Em ${x.tardios} de ${x.dias} dia${x.dias === 1 ? "" : "s"} passou de ${limTardio}h entre sair da base e fazer a 1ª entrega (máximo de ${x.maxTardio.toFixed(1).replace(".", ",")}h).`,
+        acao: "Veja se a rota dele começa longe da base, se há parada longa ou se a baixa é registrada com atraso; considere começar por um bairro mais próximo.",
+      });
+    }
+    const noturnas = [...porMot.entries()].filter(([, x]) => x.noturnas > 0).sort((x, y) => y[1].noturnas - x[1].noturnas);
+    const totNot = noturnas.reduce((a, [, x]) => a + x.noturnas, 0);
+    if (totNot >= minNoturna) {
+      const lim = base.entrega_noturna_limite ?? 20;
+      add({
+        id: "noturnas",
+        area: "rotas",
+        nivel: "aviso",
+        titulo: `${nTxt(totNot)} entregas depois das ${lim}h`,
+        detalhe: `Quem mais entrega à noite: ${noturnas.slice(0, 3).map(([n, x]) => `${n} (${nTxt(x.noturnas)})`).join(", ")}.`,
+        acao: "Entrega noturna costuma indicar rota grande demais ou saída tardia. Antecipe a saída ou divida a rota desses motoristas; confira também a segurança do trajeto.",
+      });
+    }
+    const atipicos = [...porMot.entries()].filter(([, x]) => x.ritmos > 0).sort((x, y) => y[1].ritmos - x[1].ritmos);
+    for (const [nome, x] of atipicos.slice(0, 2)) {
+      add({
+        id: `ritmo-${nome}`,
+        area: "motoristas",
+        nivel: "aviso",
+        titulo: `${nome} tem ritmo de entregas fora do padrão`,
+        detalhe: `Em ${x.ritmos} de ${x.dias} dia${x.dias === 1 ? "" : "s"} entregou mais de ${multRitmo}x o ritmo da mediana da base.`,
+        acao: "Pode ser rota concentrada (bom) ou baixa em lote (ruim). Confira comprovantes e fotos por amostragem.",
+      });
+    }
+    if (fins.length >= 3) {
+      const sorted = fins.slice().sort((x, y) => x - y);
+      const med = sorted[Math.floor(sorted.length / 2)];
+      add({ id: "fim", area: "rotas", nivel: "info", titulo: `A operação costuma terminar por volta das ${fmtHM(med)}`, detalhe: `Mediana da última entrega dos motoristas nos ${comHor.length} dia${comHor.length === 1 ? "" : "s"} com horários.`, acao: "Use como referência para avaliar se a saída das rotas precisa ser antecipada." });
+    }
+  }
+
   // ── Rotas / bairros
   const bm = new Map<string, { total: number; e: number; p: number; porMot: Map<string, number> }>();
   let comBairros = 0;

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
 import { fmtN, fmtPct, norm } from "../lib/format";
 import { scanJmsFiles, type ImportScan } from "../lib/importer";
+import type { Check } from "../lib/validate";
 
 interface Row {
   id: string;
@@ -17,12 +18,50 @@ const groupKey = (name: string, date: string) => `${norm(name)}|${date}`;
 
 type Step = "idle" | "scanning" | "preview" | "importing" | "done";
 
+const ICONE: Record<Check["nivel"], string> = { ok: "✓", aviso: "⚠", erro: "✕" };
+
+function ChecksPanel({ checks, onFix, busy }: { checks: Check[]; onFix: (horas: number) => void; busy: boolean }) {
+  const problemas = checks.filter((c) => c.nivel !== "ok");
+  const oks = checks.filter((c) => c.nivel === "ok");
+  return (
+    <div className={problemas.length ? "warnbox" : "okbox"} style={{ margin: ".6rem 0" }}>
+      <b>Verificação dos arquivos</b>
+      {problemas.length === 0 && <span> — tudo certo ({oks.length} conferências passaram)</span>}
+      {problemas.map((c) => (
+        <div key={c.id} style={{ marginTop: ".4rem" }}>
+          <div><b>{ICONE[c.nivel]} {c.titulo}</b></div>
+          {c.detalhe && <div className="small">{c.detalhe}</div>}
+          {c.fix && (
+            <button className="btn small primary" style={{ marginTop: ".3rem" }} disabled={busy} onClick={() => onFix(c.fix!.horas)}>
+              {c.fix.rotulo}
+            </button>
+          )}
+        </div>
+      ))}
+      {oks.length > 0 && problemas.length > 0 && (
+        <details style={{ marginTop: ".5rem" }}>
+          <summary className="small">{oks.length} conferência{oks.length === 1 ? "" : "s"} sem problema</summary>
+          <ul className="small" style={{ margin: ".3rem 0 0", paddingLeft: "1.1rem" }}>
+            {oks.map((c) => (<li key={c.id}>{c.titulo}{c.detalhe ? ` — ${c.detalhe}` : ""}</li>))}
+          </ul>
+        </details>
+      )}
+      {oks.length > 0 && problemas.length === 0 && (
+        <ul className="small" style={{ margin: ".3rem 0 0", paddingLeft: "1.1rem" }}>
+          {oks.map((c) => (<li key={c.id}>{c.titulo}{c.detalhe ? ` — ${c.detalhe}` : ""}</li>))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string | null) => void }) {
   const { bases, orgs, orgRoles, isSuperAdmin, importBases } = useDoca();
   const [step, setStep] = useState<Step>("idle");
   const [over, setOver] = useState(false);
   const [scan, setScan] = useState<ImportScan | null>(null);
   const [files, setFiles] = useState<File[]>([]);
+  const [shiftHoras, setShiftHoras] = useState(0);
   const [rows, setRows] = useState<Row[]>([]);
   const [error, setError] = useState("");
   const [orgId, setOrgId] = useState("");
@@ -43,7 +82,7 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
 
   // Lê (ou relê) todos os arquivos já enviados. As edições que o cliente fez na prévia
   // (nome, dia, desmarcar) são preservadas para os grupos que continuam existindo.
-  const readAll = async (list: File[]) => {
+  const readAll = async (list: File[], shift: number = shiftHoras) => {
     setError("");
     if (!list.length) {
       setScan(null);
@@ -54,7 +93,7 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
     const wasPreview = step === "preview";
     if (!wasPreview) setStep("scanning");
     try {
-      const res = await scanJmsFiles(list);
+      const res = await scanJmsFiles(list, { shiftHoras: shift });
       if (!res.groups.length) {
         setError(
           "Não encontrei pacotes nessas planilhas. Use o relatório “Monitoramento de bipagem de entrega” do JMS (e, se tiver, a “Carta de porte”)." +
@@ -152,6 +191,19 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
               onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }} />
           </label>
         </div>
+        <ChecksPanel
+          checks={scan.checks}
+          onFix={async (h) => { setShiftHoras(h); await readAll(files, h); }}
+          busy={step === "importing"}
+        />
+        {scan.enderecos > 0 ? (
+          <div className="okbox">Achei o bairro/CEP do destinatário de {fmtN(scan.enderecos)} pedidos: a análise de rotas por bairro fica disponível.</div>
+        ) : (
+          <div className="infobox">
+            Opcional: para a análise de <b>rotas e bairros críticos</b>, adicione também um relatório do JMS que traga o <b>distrito/bairro ou o CEP do
+            destinatário</b> de cada pedido (com “+ Adicionar mais arquivos”). Sem ele, o resto da análise funciona normalmente.
+          </div>
+        )}
         {scan.ignored.length > 0 && (
           <div className="warnbox">Ignorei {scan.ignored.length} arquivo(s) que não parecem relatórios do JMS: {scan.ignored.join(", ")}</div>
         )}
@@ -235,7 +287,7 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
           <button className="btn primary" disabled={step === "importing" || !included.length || missingName} onClick={confirm}>
             {step === "importing" ? "Importando…" : scan.carta ? `Confirmar e importar ${included.length} base${included.length === 1 ? "" : "s"}` : `Criar ${included.length} base${included.length === 1 ? "" : "s"} com dados incompletos`}
           </button>
-          <button className="btn" disabled={step === "importing"} onClick={() => { setStep("idle"); setScan(null); setRows([]); setFiles([]); }}>Cancelar</button>
+          <button className="btn" disabled={step === "importing"} onClick={() => { setStep("idle"); setScan(null); setRows([]); setFiles([]); setShiftHoras(0); }}>Cancelar</button>
         </div>
       </div>
     );
@@ -254,8 +306,8 @@ export default function ImportWizard({ onDone }: { onDone: (firstBaseId: string 
         {step === "scanning" ? "Lendo as planilhas…" : "Arraste aqui as planilhas do JMS"}
       </h3>
       <p className="muted small">
-        Pode soltar vários arquivos de uma vez, de várias bases. Usamos o “Monitoramento de bipagem de entrega” e,
-        se tiver, a “Carta de porte” (.xlsx ou .csv).
+        Pode soltar vários arquivos de uma vez, de várias bases. Usamos o “Monitoramento de bipagem de entrega”, a
+        “Carta de porte” e, se tiver, um relatório com o distrito ou CEP do destinatário (.xlsx ou .csv).
       </p>
       {step !== "scanning" && (
         <input ref={inputRef} type="file" multiple accept=".xlsx,.xls,.csv" onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }} />

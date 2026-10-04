@@ -123,6 +123,7 @@ export interface DayRecord {
   divergentes?: number; // pacotes com motorista divergente entre bipagem e carta de porte
   pagamentos?: Record<string, number>; // forma de pagamento -> contagem
   tipos_produto?: Record<string, number>; // tipo de produto -> contagem
+  horarios?: Record<string, DriverStats>; // horários por motorista no dia
   carta_ok?: boolean; // false = faltou a Carta de porte: entregues/pendentes do dia não são confiáveis
   bairros?: Record<string, { total: number; e: number; p: number; n: number }>; // estatística por bairro
 }
