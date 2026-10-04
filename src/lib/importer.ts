@@ -2,6 +2,7 @@ import { norm, todayISO } from "./format";
 import { detectReportType, prepare, readRows } from "./parse";
 import { mae, parseDateTime, recompute } from "./compute";
 import type { DayResult, Driver, SheetTable } from "./types";
+import { validarTabelas, type Check } from "./validate";
 
 export const BASE_KEYS = ["cod", "ent", "prob", "base", "distrito", "hr_saida", "hr_chegada", "retencao", "tipo_produto", "peso", "assinante", "origem", "bloqueado", "hr_problema"];
 export const ENT_KEYS = ["cod", "responsavel", "pagamento", "centro_financeiro", "status_carta", "origem", "bloqueado", "hr_digitacao"];
@@ -21,6 +22,11 @@ export interface ImportScan {
   carta: SheetTable | null;
   ignored: string[]; // arquivos que não parecem relatório do JMS
   enderecos: number; // pedidos para os quais achamos bairro/CEP do destinatário
+  checks: Check[]; // verificação automática dos arquivos (fuso, colunas, dias, cruzamento)
+}
+
+export interface ScanOptions {
+  shiftHoras?: number; // desloca todos os horários (corrige arquivo em outro fuso)
 }
 
 const noDrivers = new Map<string, Driver>();
@@ -100,7 +106,25 @@ function mergeTables(list: SheetTable[]): SheetTable[] {
   return out;
 }
 
-export async function scanJmsFiles(files: File[]): Promise<ImportScan> {
+const wall = (d: Date) => {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+};
+
+function shiftTable(t: SheetTable, horas: number): void {
+  const cols = ["hr_saida", "hr_chegada", "hr_problema", "hr_digitacao"].map((k) => t.map[k]).filter((c) => c >= 0);
+  if (!horas || !cols.length) return;
+  t.data = t.data.map((r) => {
+    const x = r.slice();
+    for (const c of cols) {
+      const d = x[c] ? parseDateTime(x[c]) : null;
+      if (d) { d.setHours(d.getHours() + horas); x[c] = wall(d); }
+    }
+    return x;
+  });
+}
+
+export async function scanJmsFiles(files: File[], opts: ScanOptions = {}): Promise<ImportScan> {
   const bip: SheetTable[] = [];
   const cartas: SheetTable[] = [];
   const ignored: string[] = [];
@@ -129,6 +153,10 @@ export async function scanJmsFiles(files: File[]): Promise<ImportScan> {
     }
   }
   const carta = mergeTables(cartas).sort((a, b) => b.data.length - a.data.length)[0] || null;
+  if (opts.shiftHoras) {
+    for (const t of bip) shiftTable(t, opts.shiftHoras);
+    if (carta) shiftTable(carta, opts.shiftHoras);
+  }
   let enderecos = 0;
   if (addr.size) for (const t of bip) enderecos += applyAddresses(t, addr);
 
@@ -169,7 +197,8 @@ export async function scanJmsFiles(files: File[]): Promise<ImportScan> {
     }
   }
   groups.sort((a, b) => b.total - a.total);
-  return { groups, carta, ignored, enderecos };
+  const checks = validarTabelas(bip, carta, { shiftHoras: opts.shiftHoras });
+  return { groups, carta, ignored, enderecos, checks };
 }
 
 export interface ImportItem {
