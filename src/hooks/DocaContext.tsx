@@ -722,7 +722,12 @@ export function DocaProvider({ children }: { children: ReactNode }) {
   const removeMember = useCallback(
     async (userId: string) => {
       if (!curBase) return;
-      const { error } = await supabase.rpc("remove_member", { p_base_id: curBase.id, p_user_id: userId });
+      const { error } = await supabase
+        .from("base_members")
+        .delete()
+        .eq("base_id", curBase.id)
+        .eq("user_id", userId)
+        .neq("role", "owner");
       if (error) {
         toast(error.message);
         return;
