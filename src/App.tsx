@@ -5,7 +5,7 @@ import { DocaProvider, useDoca } from "./hooks/DocaContext";
 import { ToastProvider } from "./hooks/useToast";
 import { DialogProvider } from "./hooks/useDialog";
 import { useNav } from "./hooks/useNav";
-import Auth from "./components/Auth";
+import Landing from "./components/Landing";
 import ImportWizard from "./components/ImportWizard";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
@@ -137,7 +137,12 @@ export default function App() {
   const { user, loading } = useAuth();
 
   if (loading) return null;
-  if (!user) return <Auth />;
+  if (!user)
+    return (
+      <ToastProvider>
+        <Landing />
+      </ToastProvider>
+    );
 
   return (
     <ToastProvider>

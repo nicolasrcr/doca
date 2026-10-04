@@ -49,6 +49,17 @@ export interface AllowedEmail {
   role: OrgRole | null;
 }
 
+export interface AccessRequest {
+  id: string;
+  nome: string;
+  email: string;
+  telefone: string | null;
+  bases: number | null;
+  mensagem: string | null;
+  status: "pendente" | "aprovado" | "recusado";
+  created_at: string;
+}
+
 export interface PaymentRule {
   id: string;
   base_id: string;
