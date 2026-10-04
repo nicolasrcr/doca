@@ -1,6 +1,6 @@
 # Perguntas para a franqueada J&T
 
-Oi! Estou construindo uma plataforma em que o franqueado J&T importa os arquivos que já exporta do JMS e vê, num painel simples, a saúde da operação: farol verde/amarelo/vermelho por base, motoristas, rotas, coleta e sugestões do que melhorar. Já funciona com os arquivos que você me passou (Monitoramento de bipagem de entrega e Carta de porte). Para acertar o que falta, preciso da sua experiência. Responda o que souber, em áudio ou texto; as marcadas com ⭐ são as mais importantes.
+Oi! Estou construindo uma plataforma em que o franqueado J&T importa os arquivos que já exporta do JMS e vê, num painel simples, a saúde da operação: farol verde/amarelo/vermelho por base, motoristas, rotas, coleta e sugestões do que melhorar. Já funciona com os arquivos que você me passou (Monitoramento de bipagem de entrega e Carta de porte). Para acertar o que falta, preciso da sua experiência. Responda o que souber, em áudio ou texto; as marcadas com ⭐ são as mais importantes. Os blocos 7 e 9 (contrato e rastreadores) podem ficar para depois.
 
 ## 1. Os relatórios do JMS
 
@@ -64,12 +64,25 @@ Oi! Estou construindo uma plataforma em que o franqueado J&T importa os arquivos
 37. Quanto um franqueado pagaria por mês por isso? Por base ou por franquia?
 38. O que faria um franqueado dizer "não preciso disso"?
 
-## 9. Arquivos que me ajudam muito
+## 9. Rastreadores e mapa (opcional, para uma etapa futura)
+
+Quero avaliar um painel com o trajeto dos carros no mapa, cruzando com os horários do JMS, para dar mais controle ao gerente e ao dono. Isso só vale a pena se os clientes já tiverem rastreador.
+
+39. ⭐ Quais franqueados já têm **rastreador** nos carros e de que marca ou plataforma (Sascar, Omnilink, Ituran, Cobli, Traccar, outra)?
+40. ⭐ Dá para **exportar o histórico** do rastreador em CSV, GPX ou planilha? Qual o nome do relatório e quais colunas ele traz (placa, horário, latitude, longitude, velocidade)?
+41. A plataforma do rastreador tem **API aberta** ou só tela e exportação? Quem é o contato para liberar o acesso?
+42. Quem usaria o painel: o dono, o gerente, os dois? Para qual decisão (cobrar horário de saída, achar parada longa, comprovar entrega, reduzir km)?
+43. O rastreador fica no **carro** ou no **celular do motorista**? Um mesmo carro é usado por mais de um motorista no dia?
+44. O motorista é **avisado** de que o carro é rastreado? Existe documento assinado ou cláusula no contrato dele?
+45. Hoje os clientes olham o rastreador para quê? O que sentem falta nele?
+
+## 10. Arquivos que me ajudam muito
 
 Se puder, sem dados que identifiquem pessoas (ou com os nomes trocados):
 - Um dia de cada relatório que você exporta, de uma base que teve **dia ruim** (para eu ver os problemas aparecendo).
 - O relatório de **coleta** e qualquer relatório que traga **bairro ou CEP**.
 - Um exemplo de franqueado com **mais de uma base**, para eu ver como o arquivo vem.
 - Prints das telas do JMS onde você baixa cada relatório (com o caminho do menu visível).
+- Um arquivo de exemplo exportado de um **rastreador** (um carro, um dia), com a placa trocada se preferir.
 
 Obrigado!
