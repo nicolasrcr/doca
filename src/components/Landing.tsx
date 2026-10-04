@@ -17,6 +17,7 @@ function LoginCard({ inicial = "in" }: { inicial?: Aba }) {
 
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
+    if (aba === "up" && senha.length < 8) { toast("Use uma senha com pelo menos 8 caracteres."); return; }
     setBusy(true);
     const { error } = aba === "in" ? await signIn(email, senha) : await signUp(email, senha);
     setBusy(false);
@@ -45,7 +46,8 @@ function LoginCard({ inicial = "in" }: { inicial?: Aba }) {
           <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </label>
         <label>Senha
-          <input type="password" autoComplete={aba === "in" ? "current-password" : "new-password"} value={senha} onChange={(e) => setSenha(e.target.value)} minLength={6} required />
+          <input type="password" autoComplete={aba === "in" ? "current-password" : "new-password"} value={senha} onChange={(e) => setSenha(e.target.value)} minLength={aba === "up" ? 8 : undefined} required />
+          {aba === "up" && <span className="lp-hint">Use pelo menos 8 caracteres.</span>}
         </label>
         <button className="lp-pill block" type="submit" disabled={busy}>
           {busy ? "Aguarde…" : aba === "in" ? "Entrar" : "Criar conta"}
@@ -244,10 +246,18 @@ function Modal({ onClose, children, label }: { onClose: () => void; children: Re
 export default function Landing() {
   const [modal, setModal] = useState<Aba | null>(null);
   const irAcesso = () => document.getElementById("acesso")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  // Endereços diretos para divulgar: /#cadastro (formulário de pedir acesso), /#entrar (login) e /#criar-conta.
+  // Também aceita /cadastro e /entrar quando o servidor devolve a página inicial para endereços desconhecidos.
   useEffect(() => {
-    const h = () => { if (location.hash === "#acesso") irAcesso(); };
-    window.addEventListener("hashchange", h);
-    return () => window.removeEventListener("hashchange", h);
+    const abrir = () => {
+      const alvo = (location.hash.replace(/^#/, "") || location.pathname.replace(/^\//, "")).toLowerCase();
+      if (alvo === "cadastro" || alvo === "acesso" || alvo === "pedir-acesso") setTimeout(irAcesso, 400);
+      else if (alvo === "entrar" || alvo === "login") setModal("in");
+      else if (alvo === "criar-conta") setModal("up");
+    };
+    abrir();
+    window.addEventListener("hashchange", abrir);
+    return () => window.removeEventListener("hashchange", abrir);
   }, []);
 
   return (
