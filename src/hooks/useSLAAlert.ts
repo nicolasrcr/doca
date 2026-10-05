@@ -141,6 +141,6 @@ export function getUrgencyStyle(urgency: 'critical' | 'warning' | 'info') {
     case 'warning':
       return { bg: '#fffbeb', border: '#f59e0b', color: '#92400e', icon: '⚠️' };
     case 'info':
-      return { bg: '#eff6ff', border: '#3b82f6', color: '#1e3a8a', icon: 'ℹ️' };
+      return { bg: '#f1f1f1', border: '#757575', color: '#161616', icon: 'ℹ️' };
   }
 }

@@ -1,18 +1,18 @@
 /* Gráficos e cartões do painel. Paleta categórica validada (claro e escuro); texto sempre nos tokens do app. */
 .viz-root{
   color-scheme:light;
-  --v1:#2a78d6; --v2:#eb6834; --v3:#1baf7a; --v4:#eda100; --v5:#e87ba4; --v-other:#a6a59c;
-  --v-grid:var(--line); --v-axis:#c3c2b7;
+  --v1:#161616; --v2:#e31837; --v3:#757575; --v4:#a7a6a6; --v5:#cfcfcf; --v-other:#e2e2e2;
+  --v-grid:var(--line); --v-axis:#e2e2e2;
 }
 @media (prefers-color-scheme: dark){
   :root:where(:not([data-theme="light"])) .viz-root{
     color-scheme:dark;
-    --v1:#3987e5; --v2:#d95926; --v3:#199e70; --v4:#c98500; --v5:#d55181; --v-other:#6b6a63; --v-axis:#383835;
+    --v1:#ffffff; --v2:#ff6b7f; --v3:#a7a6a6; --v4:#757575; --v5:#4a4a4a; --v-other:#3a3a3a; --v-axis:#3a3a3a;
   }
 }
 :root[data-theme="dark"] .viz-root{
   color-scheme:dark;
-  --v1:#3987e5; --v2:#d95926; --v3:#199e70; --v4:#c98500; --v5:#d55181; --v-other:#6b6a63; --v-axis:#383835;
+  --v1:#ffffff; --v2:#ff6b7f; --v3:#a7a6a6; --v4:#757575; --v5:#4a4a4a; --v-other:#3a3a3a; --v-axis:#3a3a3a;
 }
 
 .viz-head{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;margin-bottom:1rem}

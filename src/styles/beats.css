@@ -71,3 +71,10 @@ main{padding:2rem 2.25rem}
 #toast{background:var(--ink);color:var(--bg);font-family:var(--font)}
 .kpi b{font-weight:500}
 .qrSwitchBox{border:0;box-shadow:var(--shadow-lg)}
+
+/* correções: o acento agora é #161616 (branco no escuro), então texto sobre ele usa --bg */
+.kpi.goal{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.baseMenu button:hover,.baseMenu button.cur:hover{background:var(--ink);color:var(--bg)}
+.btn.signal{background:var(--ink);color:var(--bg);border-color:transparent}
+.navchild.on{color:var(--bg)}
+.track{background:var(--pend)}
