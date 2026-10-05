@@ -328,7 +328,7 @@ export default function SLAAlertModal({
                   onClick={() => onClose()}
                   style={{
                     padding: '10px 20px',
-                    background: '#2563eb',
+                    background: '#161616',
                     color: 'white',
                     border: 'none',
                     borderRadius: '6px',
@@ -338,10 +338,10 @@ export default function SLAAlertModal({
                     transition: 'all 0.2s',
                   }}
                   onMouseEnter={(e) => {
-                    (e.target as HTMLElement).style.background = '#1d4ed8';
+                    (e.target as HTMLElement).style.background = '#37383a';
                   }}
                   onMouseLeave={(e) => {
-                    (e.target as HTMLElement).style.background = '#2563eb';
+                    (e.target as HTMLElement).style.background = '#161616';
                   }}
                 >
                   Entendido, vou verificar!
