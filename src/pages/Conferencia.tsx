@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
 import { useToast, copyText } from "../hooks/useToast";
 import { mae } from "../lib/compute";
+import { Dica } from "../components/ui";
 
 interface ConfItem { code: string; driver: string; scanned: boolean }
 interface Divergence { code: string; type: string }
@@ -124,8 +125,10 @@ export default function Conferencia() {
     return (
       <section className="pane active">
         <div className="panel">
-          <h2>Conferência de carga</h2>
-          <p className="muted">Aponte a câmera do celular para o código de barras ou QR já impresso na etiqueta do pacote. O sistema confere contra a lista importada — não gera nada em tela para o coletor ler, então não interfere na bipagem oficial do JMS.</p>
+          <div className="pageHead">
+            <h2>Conferência de carga</h2>
+            <Dica>Aponte a câmera do celular para o código de barras ou QR já impresso na etiqueta do pacote. O sistema confere contra a lista importada — não gera nada em tela para o coletor ler, então não interfere na bipagem oficial do JMS.</Dica>
+          </div>
           <div className="row" style={{ margin: ".75rem 0" }}>
             <label className="inline">
               Motorista{" "}

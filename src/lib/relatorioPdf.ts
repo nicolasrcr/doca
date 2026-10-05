@@ -1,7 +1,8 @@
 import { analisarBase } from "./insights";
 import { agruparMotivos } from "./taxonomia";
 import { preverFechamentoMes } from "./previsao";
-import { fmtN, fmtPct, brDate, todayISO } from "./format";
+import { fmtN, fmtPct, brDate } from "./format";
+import { diaRef } from "./ref";
 import { geradoEm } from "./share";
 import type { Base, DayRecord } from "./types";
 
@@ -11,7 +12,7 @@ const TEND: Record<string, string> = { subindo: "subindo", caindo: "caindo", est
 // Relatório semanal em PDF para mandar ao dono, ao sócio ou à J&T: farol, números, o que atacar e quem precisa de apoio.
 export async function gerarRelatorioSemanal(base: Base, history: DayRecord[]): Promise<Blob> {
   const { jsPDF } = await import("jspdf");
-  const hoje = todayISO();
+  const hoje = diaRef(history);
   const s = analisarBase(history, base, 7, hoje);
   const doc = new jsPDF();
   const W = 210, M = 14;

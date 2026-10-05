@@ -82,3 +82,7 @@
 @media (max-width:560px){.viz-tiles4{grid-template-columns:1fr}}
 .viz-span-4>.viz-tile{height:100%;align-content:space-between}
 .previsao .big{font-size:3.4rem;font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.viz-prio details.p>summary{cursor:pointer;list-style:none}
+.viz-prio details.p>summary::-webkit-details-marker{display:none}
+.viz-prio details.p>summary b{display:inline;font-size:.92rem}
+.viz-prio details.p>span{display:block;margin-top:.4rem}

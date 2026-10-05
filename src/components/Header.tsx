@@ -6,11 +6,9 @@ import { useImport } from "./ImportDialog";
 
 export default function Header({
   onHamb,
-  onHome,
   onNewBase,
 }: {
   onHamb: () => void;
-  onHome: () => void;
   onNewBase: (name: string) => void;
 }) {
   const { bases, curBase, selectBase } = useDoca();
@@ -68,9 +66,6 @@ export default function Header({
         <span className="spacer"></span>
         <button className="btn small primary" type="button" onClick={() => imp.open()} title="Arraste ou escolha as planilhas do JMS">
           ⬆ Importar planilhas
-        </button>
-        <button className="btn small" type="button" onClick={onHome}>
-          🏠 Página inicial
         </button>
         <button className="btn small" type="button" onClick={() => signOut()}>
           Sair

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
 import { fmtN } from "../lib/format";
 import { hhmm, lerCsv, lerGpx, resumir, type ResumoRota } from "../lib/tracker";
+import { Dica } from "../components/ui";
 
 const W = 560, H = 360, PAD = 18;
 
@@ -67,8 +68,10 @@ export default function Rastreador() {
   return (
     <section className="pane active">
       <div className="panel">
-        <h2>Rastreador (beta)</h2>
-        <p className="muted">Importe o histórico do rastreador de um veículo (CSV ou GPX, um dia) e veja a que horas saiu, quanto rodou e onde ficou parado, para comparar com os horários do JMS. O arquivo é lido só no seu navegador: não é enviado nem guardado.</p>
+        <div className="pageHead">
+          <h2>Rastreador (beta)</h2>
+          <Dica>Importe o histórico do rastreador de um veículo (CSV ou GPX, um dia) e veja a que horas saiu, quanto rodou e onde ficou parado, para comparar com os horários do JMS. O arquivo é lido só no seu navegador: não é enviado nem guardado.</Dica>
+        </div>
         <div className="drop" style={{ maxWidth: 480 }}>
           <h3>Histórico do rastreador <span className="tag">CSV ou GPX</span></h3>
           <input type="file" accept=".csv,.gpx,.txt" onChange={(e) => { const f = e.target.files?.[0]; if (f) void abrir(f); e.target.value = ""; }} />

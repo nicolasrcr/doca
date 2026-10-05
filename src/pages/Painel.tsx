@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
-import { brDate, fmtN, fmtPct, todayISO } from "../lib/format";
+import { brDate, fmtN, fmtPct } from "../lib/format";
 import { analisarBase, LIMITES } from "../lib/insights";
 import type { Base, DayRecord, Driver } from "../lib/types";
 import type { ActiveScreen } from "../hooks/useNav";
@@ -9,7 +9,9 @@ import {
   type ColDatum, type FarolKey, type HBarDatum, type LinePoint,
 } from "../components/viz/Viz";
 import { useImport } from "../components/ImportDialog";
+import { Dica, Menu, MenuItem } from "../components/ui";
 import { agruparMotivos } from "../lib/taxonomia";
+import { diaRef } from "../lib/ref";
 import { compararMesmoDia, metaDoMotorista } from "../lib/metas";
 import { gerarRelatorioSemanal } from "../lib/relatorioPdf";
 import { downloadBlob, useToast } from "../hooks/useToast";
@@ -41,7 +43,7 @@ export function PainelView({ base, history, openScreen, onImport, drivers = [] }
 }) {
   const toast = useToast();
   const [periodo, setPeriodo] = useState(7);
-  const hoje = todayISO();
+  const hoje = diaRef(history);
   const meta = (base.meta ?? 95) / 100;
   const alerta = (base.alerta ?? 70) / 100;
 
@@ -138,23 +140,23 @@ export function PainelView({ base, history, openScreen, onImport, drivers = [] }
   return (
     <VizRoot>
       <section className="pane active">
-        <div className="viz-head">
-          <h2>Painel · {base.name}</h2>
-          <span className="spacer" style={{ flex: 1 }}></span>
-          <div className="viz-filters">
-            <label className="small muted" htmlFor="pv-periodo">Período</label>
-            <select id="pv-periodo" value={periodo} onChange={(e) => setPeriodo(Number(e.target.value))}>
-              <option value={7}>Últimos 7 dias</option>
-              <option value={14}>Últimos 14 dias</option>
-              <option value={30}>Últimos 30 dias</option>
-            </select>
-            <button className="btn" onClick={async () => { try { downloadBlob(`relatorio-semanal-${base.name}-${hoje}.pdf`, await gerarRelatorioSemanal(base, history)); } catch { toast("Não consegui gerar o PDF agora."); } }}>⬇ Relatório semanal (PDF)</button>
-            {onImport && <button className="btn primary" onClick={onImport}>⬆ Importar planilhas</button>}
-          </div>
+        <div className="pageHead">
+          <h2>{base.name}</h2>
+          <Dica>
+            {ultimo ? <>Dados até {brDate(ultimo)}. </> : null}Meta de entrega: {fmtPct(meta)}. Alerta abaixo de {fmtPct(alerta)}. Você ajusta isso em “Dados e metas da base”.
+          </Dica>
+          <span className="spacer"></span>
+          <select id="pv-periodo" aria-label="Período" value={periodo} onChange={(e) => setPeriodo(Number(e.target.value))}>
+            <option value={7}>7 dias</option>
+            <option value={14}>14 dias</option>
+            <option value={30}>30 dias</option>
+          </select>
+          <Menu rotulo="Mais">
+            <MenuItem onClick={async () => { try { downloadBlob(`relatorio-semanal-${base.name}-${hoje}.pdf`, await gerarRelatorioSemanal(base, history)); } catch { toast("Não consegui gerar o PDF agora."); } }}>Relatório semanal (PDF)</MenuItem>
+            {openScreen && <MenuItem onClick={() => openScreen("saude")}>Ver sugestões da base</MenuItem>}
+            {openScreen && <MenuItem onClick={() => openScreen("historico")}>Histórico e ranking</MenuItem>}
+          </Menu>
         </div>
-        <p className="muted small" style={{ marginTop: "-.4rem" }}>
-          {ultimo ? <>Dados até {brDate(ultimo)}. </> : null}Meta de entrega desta base: {fmtPct(meta)} (alerta abaixo de {fmtPct(alerta)}). Ajuste em Dados da base.
-        </p>
 
         {s.diasSemCarta > 0 && (
           <div className="warnbox" style={{ marginBottom: "1rem" }}>
@@ -199,17 +201,20 @@ export function PainelView({ base, history, openScreen, onImport, drivers = [] }
                 </ChartCard>
               </div>
               <div className="viz-span-4">
-                <ChartCard title="O que atacar primeiro" caption="Sugestões a partir dos seus números">
+                <ChartCard title="O que atacar primeiro">
                   {s.prioridades.length === 0 ? (
-                    <div className="okbox">Nenhuma prioridade crítica no período.</div>
+                    <div className="okbox">Nada crítico no período.</div>
                   ) : (
                     <div className="viz-prio">
-                      {s.prioridades.map((p) => (
-                        <div key={p.id} className={"p " + p.nivel}><b>{p.titulo}</b><span>{p.acao || p.detalhe}</span></div>
+                      {s.prioridades.slice(0, 3).map((p) => (
+                        <details key={p.id} className={"p " + p.nivel}>
+                          <summary><b>{p.titulo}</b></summary>
+                          <span>{p.acao || p.detalhe}</span>
+                        </details>
                       ))}
                     </div>
                   )}
-                  {openScreen && <button className="btn small" style={{ marginTop: ".8rem" }} onClick={() => openScreen("saude")}>Ver análise completa</button>}
+                  {openScreen && <button className="btn small" style={{ marginTop: ".6rem" }} onClick={() => openScreen("saude")}>Ver tudo</button>}
                 </ChartCard>
               </div>
             </div>

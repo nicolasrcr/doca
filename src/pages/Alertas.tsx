@@ -3,6 +3,7 @@ import { useDoca } from "../hooks/DocaContext";
 import { computeAlerts } from "../lib/compute";
 import { fmtN, fmtPct } from "../lib/format";
 import type { ActiveScreen } from "../hooks/useNav";
+import { Dica } from "../components/ui";
 
 const NIVEL_LABEL: Record<string, string> = { critico: "Crítico", aviso: "Aviso", info: "Info" };
 const NIVEL_CLASS: Record<string, string> = { critico: "bad", aviso: "warn", info: "ok" };
@@ -17,7 +18,7 @@ export default function Alertas({ openScreen }: { openScreen: (id: ActiveScreen)
       <section className="pane active">
         <div className="panel">
           <h2>Alertas operacionais</h2>
-          <div className="empty"><h3>Nenhum dia carregado</h3><p>Vá em Operação → Monitoramento de bipagem de entrega e importe as planilhas.</p></div>
+          <div className="empty"><h3>Nenhum dia carregado</h3><p>Importe as planilhas do JMS (botão no topo) ou abra Dia a dia → Entregas do dia.</p></div>
         </div>
       </section>
     );
@@ -29,8 +30,10 @@ export default function Alertas({ openScreen }: { openScreen: (id: ActiveScreen)
   return (
     <section className="pane active">
       <div className="panel" style={{ marginBottom: "1rem" }}>
-        <h2>Motoristas abaixo do alerta de meta</h2>
-        <p className="muted small">Abaixo do alerta configurado em Infos Básicas. Clique para ver o detalhe na aba de Operação.</p>
+        <div className="pageHead">
+          <h2>Motoristas abaixo do alerta de meta</h2>
+          <Dica>Abaixo do alerta configurado em Infos Básicas. Clique para ver o detalhe em Entregas do dia.</Dica>
+        </div>
         {!abaixo.length ? (
           <div className="okbox">Nenhum motorista abaixo do alerta hoje.</div>
         ) : (
@@ -46,8 +49,10 @@ export default function Alertas({ openScreen }: { openScreen: (id: ActiveScreen)
       </div>
 
       <div className="panel">
-        <h2>Alertas operacionais do dia</h2>
-        <p className="muted small">Retenção, início tardio, ritmo atípico, taxa de falha, entrega noturna, carga desigual e divergência de motorista. Ajuste os limites em Infos Básicas.</p>
+        <div className="pageHead">
+          <h2>Alertas operacionais do dia</h2>
+          <Dica>Retenção, início tardio, ritmo atípico, taxa de falha, entrega noturna, carga desigual e divergência de motorista. Ajuste os limites em Infos Básicas.</Dica>
+        </div>
         {!alerts.length ? (
           <div className="okbox">Nenhum alerta operacional hoje.</div>
         ) : (

@@ -87,7 +87,7 @@ export default function Ajustes() {
   return (
     <section className="pane active">
       <div className="panel">
-        <h2>Infos básicas da base</h2>
+        <h2>Dados e metas da base</h2>
         <div className="form">
           <label htmlFor="setBase">Nome da base</label><input id="setBase" value={name} disabled={!canEdit} onChange={(e) => setName(e.target.value)} />
           <label htmlFor="setCity">Cidade</label><input id="setCity" value={city} disabled={!canEdit} onChange={(e) => setCity(e.target.value)} />
@@ -108,9 +108,9 @@ export default function Ajustes() {
           </select>
         </div>
       </div>
-      <div className="panel" style={{ marginTop: "1rem" }}>
-        <h2>Meta por dia da semana</h2>
-        <p className="muted small" style={{ margin: "0 0 .75rem" }}>Opcional. Se segunda-feira é sempre mais pesada, por exemplo, dá para ter uma meta própria para ela. Em branco, vale a meta de entrega da base ({meta}%). Cada motorista também pode ter uma meta própria em “Motoristas e veículos”.</p>
+      <details className="panel cargas" style={{ marginTop: "1rem" }}>
+        <summary>Meta por dia da semana <span className="muted small">(opcional)</span></summary>
+        <p className="muted small" style={{ margin: "0 0 .75rem" }}>Em branco, vale a meta da base ({meta}%).</p>
         <div className="form">
           {NOMES_DIA.map((nome, i) => (
             <span key={i} style={{ display: "contents" }}>
@@ -120,10 +120,9 @@ export default function Ajustes() {
             </span>
           ))}
         </div>
-      </div>
-      <div className="panel" style={{ marginTop: "1rem" }}>
-        <h2>Limites dos alertas operacionais</h2>
-        <p className="muted small" style={{ margin: "0 0 .75rem" }}>Usados em Alertas e Pendências de hoje. Ajuste à realidade da base.</p>
+      </details>
+      <details className="panel cargas" style={{ marginTop: "1rem" }}>
+        <summary>Limites dos alertas <span className="muted small">(avançado)</span></summary>
         <div className="form">
           <label htmlFor="setTFA">Taxa de falha — aviso abaixo de (%)</label><input id="setTFA" type="number" min={0} max={100} step={0.5} value={taxaFalhaAviso} disabled={!canEdit} onChange={(e) => setTaxaFalhaAviso(parseFloat(e.target.value))} />
           <label htmlFor="setTFC">Taxa de falha — crítico abaixo de (%)</label><input id="setTFC" type="number" min={0} max={100} step={0.5} value={taxaFalhaCritico} disabled={!canEdit} onChange={(e) => setTaxaFalhaCritico(parseFloat(e.target.value))} />
@@ -135,12 +134,9 @@ export default function Ajustes() {
           <label htmlFor="setNL">Entrega noturna — a partir de (hora do dia)</label><input id="setNL" type="number" min={0} max={23} step={1} value={noturnaLimite} disabled={!canEdit} onChange={(e) => setNoturnaLimite(parseInt(e.target.value, 10))} />
           <label htmlFor="setNM">Entrega noturna — mínimo de entregas para alertar</label><input id="setNM" type="number" min={1} step={1} value={noturnaMin} disabled={!canEdit} onChange={(e) => setNoturnaMin(parseInt(e.target.value, 10))} />
         </div>
-      </div>
+      </details>
       <div className="panel" style={{ marginTop: "1rem" }}>
         {canEdit && <div className="row"><button className="btn primary" onClick={save}>Salvar ajustes</button></div>}
-        <div className="infobox" style={{ marginTop: "1.25rem" }}>
-          Colunas lidas pelo nome do cabeçalho (Número de pedido JMS, Entregador, Problema ou Razão de retenção). Códigos com hífen são volumes-filho e contam pelo código-mãe. Se o layout do JMS mudar, escolha a coluna certa na própria tela de upload.
-        </div>
       </div>
     </section>
   );
