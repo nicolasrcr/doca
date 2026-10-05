@@ -1,4 +1,5 @@
 import type { ColetaResult } from "./compute";
+import { parseDateTime } from "./compute";
 import type { DayResult } from "./types";
 
 // Linha da tabela `days` a partir do resultado calculado do dia. Usada ao salvar o dia
@@ -21,6 +22,13 @@ export function buildDayRow(opts: {
   for (const it of itens) {
     if (it.pagamento) pagamentos[it.pagamento] = (pagamentos[it.pagamento] || 0) + 1;
     if (it.tipo_produto) tiposProduto[it.tipo_produto] = (tiposProduto[it.tipo_produto] || 0) + 1;
+  }
+  // entregas confirmadas por hora de chegada (hora de parede, 0 a 23)
+  const horas: Record<string, number> = {};
+  for (const it of itens) {
+    if (!it.entregue || !it.hr_chegada) continue;
+    const d = parseDateTime(it.hr_chegada);
+    if (d) horas[String(d.getHours())] = (horas[String(d.getHours())] || 0) + 1;
   }
   return {
     base_id: opts.baseId,
@@ -58,5 +66,6 @@ export function buildDayRow(opts: {
     carta_ok: result.hasEnt,
     bairros: result.bairroStats,
     horarios: result.driverStats,
+    horas,
   };
 }

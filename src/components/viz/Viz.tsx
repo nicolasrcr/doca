@@ -234,8 +234,8 @@ export function LineChart({ points, refLine, format, height = 210, color = "var(
 export interface ColSeries { name: string; color: string }
 export interface ColDatum { label: string; parts: number[]; tip: ReactNode }
 
-export function ColumnChart({ data, series, format = (v) => v.toLocaleString("pt-BR"), height = 210, name }: {
-  data: ColDatum[]; series: ColSeries[]; format?: (v: number) => string; height?: number; name: string;
+export function ColumnChart({ data, series, format = (v) => v.toLocaleString("pt-BR"), height = 210, name, unidade = "dias" }: {
+  data: ColDatum[]; series: ColSeries[]; format?: (v: number) => string; height?: number; name: string; unidade?: string;
 }) {
   const [ref, w] = useWidth();
   const tip = useTip();
@@ -262,7 +262,7 @@ export function ColumnChart({ data, series, format = (v) => v.toLocaleString("pt
   return (
     <div ref={ref}>
       {w > 0 && (
-        <svg className="viz-svg" width={w} height={height} role="img" aria-label={`${name}: ${n} dias`}>
+        <svg className="viz-svg" width={w} height={height} role="img" aria-label={`${name}: ${n} ${unidade}`}>
           {ticks.map((t) => (
             <g key={t}>
               <line className="grid" x1={L} x2={L + iw} y1={y(t)} y2={y(t)} />
@@ -397,4 +397,93 @@ export function topComOutros(entries: [string, number][], n = 5): DonutDatum[] {
   const top = sorted.slice(0, n).map(([label, value]) => ({ label, value }));
   const rest = sorted.slice(n).reduce((a, [, v]) => a + v, 0);
   return rest > 0 ? [...top, { label: "Outros", value: rest }] : top;
+}
+
+/* ───────── dispersão (relação entre duas medidas) ───────── */
+export interface DispDatum { label: string; x: number; y: number; destaque?: boolean; tip: ReactNode }
+
+export function Dispersao({ data, refY, refLabel, xRotulo, yRotulo, fmtX, fmtY, height = 300, name }: {
+  data: DispDatum[]; refY?: number; refLabel?: string; xRotulo: string; yRotulo: string;
+  fmtX: (v: number) => string; fmtY: (v: number) => string; height?: number; name: string;
+}) {
+  const [ref, w] = useWidth();
+  const tip = useTip();
+  const [hi, setHi] = useState<number | null>(null);
+  const L = 48, R = 16, T = 12, B = 40;
+  const iw = Math.max(10, w - L - R), ih = height - T - B;
+  const xs = data.map((d) => d.x), ys = data.map((d) => d.y);
+  const x0 = Math.min(...xs, 0), x1 = niceMax(Math.max(...xs, 1));
+  const lo0 = Math.min(...ys, refY ?? Infinity), hi0 = Math.max(...ys, refY ?? -Infinity);
+  const pad = Math.max(0.02, (hi0 - lo0) * 0.25);
+  const y0 = Math.max(0, Math.floor((lo0 - pad) * 20) / 20), y1 = Math.min(1, Math.ceil((hi0 + 0.01) * 20) / 20);
+  const px = (v: number) => L + ((v - x0) / (x1 - x0 || 1)) * iw;
+  const py = (v: number) => T + ih - ((v - y0) / (y1 - y0 || 1)) * ih;
+  const ticksY = [0, 1, 2, 3, 4].map((k) => y0 + ((y1 - y0) * k) / 4);
+  const ticksX = [0, 1, 2, 3, 4].map((k) => x0 + ((x1 - x0) * k) / 4);
+  return (
+    <div ref={ref}>
+      {w > 0 && (
+        <svg className="viz-svg" width={w} height={height} role="img" aria-label={name}>
+          {ticksY.map((t, i) => (
+            <g key={i}><line x1={L} x2={L + iw} y1={py(t)} y2={py(t)} className="grid" /><text x={L - 6} y={py(t) + 4} textAnchor="end">{fmtY(t)}</text></g>
+          ))}
+          {ticksX.map((t, i) => (<text key={i} x={px(t)} y={T + ih + 16} textAnchor="middle">{fmtX(t)}</text>))}
+          <text x={L + iw / 2} y={height - 4} textAnchor="middle" style={{ fill: "var(--muted)" }}>{xRotulo}</text>
+          <text x={10} y={T + 4} style={{ fill: "var(--muted)" }}>{yRotulo}</text>
+          {refY != null && (
+            <g>
+              <line x1={L} x2={L + iw} y1={py(refY)} y2={py(refY)} stroke="var(--v2)" strokeWidth="1.5" strokeDasharray="4 3" />
+              <text x={L + iw} y={py(refY) - 5} textAnchor="end" style={{ fill: "var(--ink)", fontWeight: 600 }}>{refLabel}</text>
+            </g>
+          )}
+          {data.map((d, i) => {
+            const cx = px(d.x), cy = py(d.y);
+            return (
+              <g key={i} className={hi != null && hi !== i ? "dim" : ""}>
+                <circle cx={cx} cy={cy} r={hi === i ? 9 : 7} fill={d.destaque ? "var(--v2)" : "var(--v1)"} fillOpacity={0.85} stroke="var(--surface)" strokeWidth="2" />
+                {d.destaque && <text x={cx + 11} y={cy + 4} style={{ fill: "var(--ink)", fontWeight: 600 }}>{d.label.length > 18 ? d.label.slice(0, 17) + "…" : d.label}</text>}
+                <circle cx={cx} cy={cy} r={14} fill="transparent" tabIndex={0} aria-label={`${d.label}: ${fmtX(d.x)} pacotes, ${fmtY(d.y)}`}
+                  onPointerMove={(e) => { setHi(i); tip.show(e.clientX, e.clientY, d.tip); }}
+                  onPointerLeave={() => { setHi(null); tip.hide(); }}
+                  onFocus={(e) => { setHi(i); const r = (e.target as SVGCircleElement).getBoundingClientRect(); tip.show(r.left + 16, r.top, d.tip); }}
+                  onBlur={() => { setHi(null); tip.hide(); }} />
+              </g>
+            );
+          })}
+        </svg>
+      )}
+    </div>
+  );
+}
+
+/* ───────── mapa de calor (linhas × colunas) ───────── */
+export interface HeatCell { value: number | null; tip: ReactNode }
+export interface HeatRow { label: string; cells: HeatCell[] }
+
+export function Heatmap({ cols, rows, meta, alerta, name }: { cols: string[]; rows: HeatRow[]; meta: number; alerta: number; name: string }) {
+  const tip = useTip();
+  const nivel = (v: number | null) => (v === null ? "vazio" : v >= meta ? "ok" : v >= alerta ? "warn" : "bad");
+  return (
+    <div className="viz-heat" role="region" aria-label={name} tabIndex={0}>
+      <table>
+        <thead>
+          <tr><th></th>{cols.map((c) => (<th key={c}>{c}</th>))}</tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.label}>
+              <th scope="row" title={r.label}>{r.label.length > 22 ? r.label.slice(0, 21) + "…" : r.label}</th>
+              {r.cells.map((c, i) => (
+                <td key={i} className={"h-" + nivel(c.value)} tabIndex={c.value === null ? -1 : 0}
+                  onPointerMove={(e) => c.value !== null && tip.show(e.clientX, e.clientY, c.tip)} onPointerLeave={() => tip.hide()}
+                  onFocus={(e) => { const rc = (e.target as HTMLElement).getBoundingClientRect(); tip.show(rc.left + 10, rc.top, c.tip); }} onBlur={() => tip.hide()}>
+                  {c.value === null ? "·" : Math.round(c.value * 100)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
