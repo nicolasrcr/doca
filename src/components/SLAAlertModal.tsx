@@ -60,7 +60,8 @@ export default function SLAAlertModal({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           style={{
-            background: 'white',
+            background: 'var(--surface)',
+            color: 'var(--ink)',
             borderRadius: '12px',
             boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
             maxWidth: '800px',
@@ -74,7 +75,7 @@ export default function SLAAlertModal({
           <div
             style={{
               padding: '24px',
-              borderBottom: '1px solid #e5e7eb',
+              borderBottom: '1px solid var(--line)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -84,17 +85,17 @@ export default function SLAAlertModal({
               <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>
                 🚨 Alertas de SLA
               </h2>
-              <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#666' }}>
+              <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--muted)' }}>
                 {criticalCount > 0 && (
                   <>
-                    <span style={{ color: '#dc2626', fontWeight: 600 }}>
+                    <span style={{ color: 'var(--bad)', fontWeight: 600 }}>
                       {criticalCount} crítico{criticalCount !== 1 ? 's' : ''}
                     </span>
                     {warningCount > 0 && ' · '}
                   </>
                 )}
                 {warningCount > 0 && (
-                  <span style={{ color: '#f59e0b', fontWeight: 600 }}>
+                  <span style={{ color: 'var(--warn)', fontWeight: 600 }}>
                     {warningCount} aviso{warningCount !== 1 ? 's' : ''}
                   </span>
                 )}
@@ -177,7 +178,7 @@ export default function SLAAlertModal({
                           <span
                             style={{
                               background: style.border,
-                              color: 'white',
+                              color: style.onBorder,
                               padding: '2px 8px',
                               borderRadius: '4px',
                               fontSize: '12px',
@@ -241,7 +242,7 @@ export default function SLAAlertModal({
                           style={{
                             padding: '8px 16px',
                             background: style.border,
-                            color: 'white',
+                            color: style.onBorder,
                             border: 'none',
                             borderRadius: '6px',
                             fontSize: '12px',
@@ -293,7 +294,7 @@ export default function SLAAlertModal({
             <div
               style={{
                 padding: '16px 24px',
-                borderTop: '1px solid #e5e7eb',
+                borderTop: '1px solid var(--line)',
                 display: 'flex',
                 gap: '8px',
                 justifyContent: 'flex-end',
@@ -306,19 +307,19 @@ export default function SLAAlertModal({
                 }}
                 style={{
                   padding: '10px 20px',
-                  background: '#f3f4f6',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
+                  background: 'var(--pend)',
+                  border: '1px solid var(--line)',
+                  borderRadius: '9999px',
                   fontSize: '14px',
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
-                  (e.target as HTMLElement).style.background = '#e5e7eb';
+                  (e.target as HTMLElement).style.background = 'var(--line)';
                 }}
                 onMouseLeave={(e) => {
-                  (e.target as HTMLElement).style.background = '#f3f4f6';
+                  (e.target as HTMLElement).style.background = 'var(--pend)';
                 }}
               >
                 Descartar todos
@@ -328,20 +329,20 @@ export default function SLAAlertModal({
                   onClick={() => onClose()}
                   style={{
                     padding: '10px 20px',
-                    background: '#2563eb',
-                    color: 'white',
+                    background: 'var(--ink)',
+                    color: 'var(--bg)',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '9999px',
                     fontSize: '14px',
                     fontWeight: 600,
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                   }}
                   onMouseEnter={(e) => {
-                    (e.target as HTMLElement).style.background = '#1d4ed8';
+                    (e.target as HTMLElement).style.background = 'color-mix(in srgb, var(--ink) 80%, var(--bg))';
                   }}
                   onMouseLeave={(e) => {
-                    (e.target as HTMLElement).style.background = '#2563eb';
+                    (e.target as HTMLElement).style.background = 'var(--ink)';
                   }}
                 >
                   Entendido, vou verificar!

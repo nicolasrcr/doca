@@ -21,10 +21,10 @@ function Trajeto({ r }: { r: ResumoRota }) {
   const a = r.pontos[0], z = r.pontos[r.pontos.length - 1];
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Trajeto do veículo no dia, com as paradas longas marcadas" style={{ maxHeight: 420, background: "var(--surface)", borderRadius: "var(--r)", border: "1px solid var(--line)" }}>
-      <polyline points={linha} fill="none" stroke="var(--v1, #2a78d6)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points={linha} fill="none" stroke="var(--v1, #161616)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       {r.paradas.map((p, i) => (
         <g key={i}>
-          <circle cx={g.x(p.lon)} cy={g.y(p.lat)} r={Math.min(14, 5 + p.minutos / 10)} fill="var(--v2, #eb6834)" fillOpacity=".35" stroke="var(--v2, #eb6834)" strokeWidth="2" />
+          <circle cx={g.x(p.lon)} cy={g.y(p.lat)} r={Math.min(14, 5 + p.minutos / 10)} fill="var(--v2, #e31837)" fillOpacity=".35" stroke="var(--v2, #e31837)" strokeWidth="2" />
           <text x={g.x(p.lon)} y={g.y(p.lat) - 10} textAnchor="middle" fontSize="11" style={{ fill: "var(--ink)", fontWeight: 600 }}>{p.minutos}min</text>
         </g>
       ))}

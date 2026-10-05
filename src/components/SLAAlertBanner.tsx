@@ -15,9 +15,9 @@ export default function SLAAlertBanner({ alerts, onOpen }: SLAAlertBannerProps) 
   const critical = alerts.filter((a) => a.urgency === 'critical').length;
   const warning = alerts.filter((a) => a.urgency === 'warning').length;
 
-  const bgColor = critical > 0 ? '#fef2f2' : '#fffbeb';
-  const borderColor = critical > 0 ? '#dc2626' : '#f59e0b';
-  const textColor = critical > 0 ? '#991b1b' : '#92400e';
+  const bgColor = critical > 0 ? 'var(--bad-bg)' : 'var(--warn-bg)';
+  const borderColor = critical > 0 ? 'var(--bad)' : 'var(--warn)';
+  const textColor = critical > 0 ? 'color-mix(in srgb, var(--bad) 65%, var(--ink))' : 'color-mix(in srgb, var(--warn) 65%, var(--ink))';
   const icon = critical > 0 ? '🚨' : '⚠️';
 
   return (

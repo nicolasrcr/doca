@@ -137,10 +137,10 @@ export function formatMinutos(minutos: number): string {
 export function getUrgencyStyle(urgency: 'critical' | 'warning' | 'info') {
   switch (urgency) {
     case 'critical':
-      return { bg: '#fef2f2', border: '#dc2626', color: '#991b1b', icon: '🚨' };
+      return { bg: 'var(--bad-bg)', border: 'var(--bad)', color: 'color-mix(in srgb, var(--bad) 65%, var(--ink))', onBorder: 'var(--bg)', icon: '🚨' };
     case 'warning':
-      return { bg: '#fffbeb', border: '#f59e0b', color: '#92400e', icon: '⚠️' };
+      return { bg: 'var(--warn-bg)', border: 'var(--warn)', color: 'color-mix(in srgb, var(--warn) 65%, var(--ink))', onBorder: 'var(--bg)', icon: '⚠️' };
     case 'info':
-      return { bg: '#eff6ff', border: '#3b82f6', color: '#1e3a8a', icon: 'ℹ️' };
+      return { bg: 'var(--pend)', border: 'var(--muted)', color: 'var(--ink)', onBorder: 'var(--bg)', icon: 'ℹ️' };
   }
 }

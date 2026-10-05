@@ -374,7 +374,7 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
     c.width = W * k; c.height = H * k;
     const g = c.getContext("2d")!;
     g.scale(k, k);
-    const COL: Record<string, string> = { ok: "#1E8757", warn: "#E0A100", bad: "#C43D2B", ink: "#1B2A29", muted: "#5E6B69", pend: "#D3D8D2", bg: "#FAFBF8", sig: "#F2B705" };
+    const COL: Record<string, string> = { ok: "#1E8757", warn: "#E0A100", bad: "#C43D2B", ink: "#161616", muted: "#757575", pend: "#e2e2e2", bg: "#FFFFFF", sig: "#e2e2e2" };
     g.fillStyle = COL.bg; g.fillRect(0, 0, W, H);
     g.fillStyle = COL.ink; g.fillRect(0, 0, W, 96);
     g.fillStyle = COL.sig; g.fillRect(0, 96, W, 6);

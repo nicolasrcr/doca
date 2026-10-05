@@ -1,0 +1,80 @@
+/* Beats Style: monocromático, pílulas, títulos grandes. Carregado depois do global.css.
+   Cor só nos estados de farol (ok/warn/bad); a UI é branco, #161616 e cinzas. */
+:root{
+  --ink:#161616; --bg:#ffffff; --surface:#ffffff; --line:#e2e2e2; --muted:#757575;
+  --pend:#f1f1f1; --focus:#161616; --secondary:#161616; --accent:#161616; --ring:#006cff;
+  --sidebar:#ffffff; --hover:#f1f1f1;
+  --ok:#157a46; --warn:#a85a00; --bad:#e31837; --signal:#a85a00; --stamp:#e31837;
+  --r:16px; --r-sm:12px; --r-lg:16px; --pill:9999px;
+  --shadow:none; --shadow-lg:0 8px 30px rgba(0,0,0,.12);
+  --font:"Jost",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-cta:"Oswald","Arial Narrow",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#ffffff; --bg:#161616; --surface:#212121; --line:#3a3a3a; --muted:#a7a6a6;
+    --pend:#2a2a2a; --focus:#ffffff; --secondary:#161616; --accent:#ffffff;
+    --sidebar:#161616; --hover:#2a2a2a;
+    --ok:#32d583; --warn:#f5a03a; --bad:#ff6b7f; --signal:#f5a03a; --stamp:#ff6b7f;
+    --shadow:none; --shadow-lg:0 8px 30px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#ffffff; --bg:#161616; --surface:#212121; --line:#3a3a3a; --muted:#a7a6a6;
+  --pend:#2a2a2a; --focus:#ffffff; --secondary:#161616; --accent:#ffffff;
+  --sidebar:#161616; --hover:#2a2a2a;
+  --ok:#32d583; --warn:#f5a03a; --bad:#ff6b7f; --signal:#f5a03a; --stamp:#ff6b7f;
+  --shadow:none; --shadow-lg:0 8px 30px rgba(0,0,0,.5);
+}
+body{font:16px/1.5 var(--font);letter-spacing:0}
+h1,h2,h3{font-weight:500;letter-spacing:-.01em}
+h1{font-size:clamp(2.2rem,4vw,3.5rem);line-height:1.05;font-weight:400}
+h2{font-size:1.75rem;line-height:1.15}
+
+/* botões: pílula, Oswald caixa-alta */
+.btn{height:44px;padding:0 1.5rem;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font:500 .85rem/1 var(--font-cta);text-transform:uppercase;letter-spacing:.04em;background:var(--hover);color:var(--ink);transition:background-color .3s,color .3s}
+.btn.small{height:34px;padding:0 1rem;font-size:.78rem}
+.btn:hover{background:color-mix(in srgb,var(--ink) 12%,transparent)}
+.btn.primary{background:var(--ink);color:var(--bg)}
+.btn.primary:hover{background:color-mix(in srgb,var(--ink) 80%,var(--bg))}
+.btn.danger{background:transparent;color:var(--bad);border:1.5px solid var(--bad)}
+:focus-visible{outline:3px solid var(--ring);outline-offset:2px}
+
+/* campos em pílula, borda escura */
+input:not([type=checkbox]):not([type=radio]):not([type=file]),select{border-radius:var(--pill);height:44px;padding:0 1rem}
+textarea{border-radius:var(--r)}
+.toolbar input,.toolbar select,table.drv input,.form input,.form select,.form textarea{border:1.5px solid var(--ink);background:var(--surface);color:var(--ink)}
+
+/* superfícies sem borda dura nem sombra */
+.panel,.board,.kpis,.moduleList,.drop,.viz-card,.viz-tile,.authCard{border-radius:var(--r);box-shadow:none;background:var(--surface)}
+.panel,.board,.viz-card,.viz-tile{background:var(--pend)}
+:root[data-theme="dark"] .panel{background:var(--surface)}
+dialog{border-radius:var(--r);box-shadow:var(--shadow-lg)}
+.drop,.importStrip{background:var(--pend);border:1.5px dashed var(--line)}
+.warnbox,.infobox,.okbox{border-radius:var(--r-sm)}
+table.drv th{color:var(--muted);font-weight:500}
+.subtabs{background:var(--pend)}
+.subtabs button.on,.subtabs .on{background:var(--ink);color:var(--bg)}
+
+/* menu lateral */
+.sidebar{background:var(--sidebar);backdrop-filter:none;-webkit-backdrop-filter:none;border-right:1px solid var(--line)}
+.sidebarTop{--mark2:var(--ink)}
+.navcat-btn{font-weight:500}
+.navcat-btn.open .ic{color:var(--ink)}
+.navchild.on{background:var(--ink);color:var(--bg);font-weight:500;border-radius:var(--pill)}
+main{padding:2rem 2.25rem}
+
+/* início: número grande sobre preto */
+.manifestHero{border-radius:var(--r);background:#161616;color:#fff}
+.stampNum{font-weight:400;font-size:clamp(4rem,9vw,6.5rem);letter-spacing:-.03em}
+.moduleRow .ic{background:var(--pend);color:var(--ink);border-radius:50%}
+#toast{background:var(--ink);color:var(--bg);font-family:var(--font)}
+.kpi b{font-weight:500}
+.qrSwitchBox{border:0;box-shadow:var(--shadow-lg)}
+
+/* correções: o acento agora é #161616 (branco no escuro), então texto sobre ele usa --bg */
+.kpi.goal{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.baseMenu button:hover,.baseMenu button.cur:hover{background:var(--ink);color:var(--bg)}
+.btn.signal{background:var(--ink);color:var(--bg);border-color:transparent}
+.navchild.on{color:var(--bg)}
+.track{background:var(--pend)}

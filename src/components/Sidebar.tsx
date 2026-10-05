@@ -82,9 +82,9 @@ export default function Sidebar({
             style={{
               width: 26,
               height: 26,
-              borderRadius: "var(--r-sm)",
+              borderRadius: "50%",
               background: "var(--focus)",
-              color: "#fff",
+              color: "var(--bg)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
