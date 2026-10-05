@@ -162,6 +162,7 @@ export interface DayRecord {
   pagamentos?: Record<string, number>; // forma de pagamento -> contagem
   tipos_produto?: Record<string, number>; // tipo de produto -> contagem
   horarios?: Record<string, DriverStats>; // horários por motorista no dia
+  horas?: Record<string, number>; // entregas confirmadas por hora do dia ("0" a "23")
   carta_ok?: boolean; // false = faltou a Carta de porte: entregues/pendentes do dia não são confiáveis
   bairros?: Record<string, { total: number; e: number; p: number; n: number }>; // estatística por bairro
 }

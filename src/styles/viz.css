@@ -86,3 +86,14 @@
 .viz-prio details.p>summary::-webkit-details-marker{display:none}
 .viz-prio details.p>summary b{display:inline;font-size:.92rem}
 .viz-prio details.p>span{display:block;margin-top:.4rem}
+.viz-heat{overflow-x:auto;outline-offset:2px}
+.viz-heat table{border-collapse:separate;border-spacing:3px;font-size:.78rem;font-variant-numeric:tabular-nums}
+.viz-heat th{font-weight:500;color:var(--muted);text-align:center;padding:0 .15rem;white-space:nowrap}
+.viz-heat tbody th{text-align:right;padding-right:.5rem;color:var(--ink);position:sticky;left:0;background:var(--surface)}
+.viz-heat td{min-width:34px;height:30px;text-align:center;border-radius:6px;font-weight:600}
+.viz-heat td.h-vazio{color:var(--muted);font-weight:400}
+.viz-heat td.h-ok{background:color-mix(in srgb,var(--ink) 9%,transparent)}
+.viz-heat td.h-warn{background:color-mix(in srgb,var(--warn) 30%,transparent)}
+.viz-heat td.h-bad{background:color-mix(in srgb,var(--bad) 38%,transparent)}
+.viz-legend-heat{display:flex;gap:1rem;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:.5rem}
+.viz-legend-heat i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:.35rem;vertical-align:-2px}

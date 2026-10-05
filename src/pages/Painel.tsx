@@ -10,6 +10,7 @@ import {
 } from "../components/viz/Viz";
 import { useImport } from "../components/ImportDialog";
 import { Dica, Menu, MenuItem } from "../components/ui";
+import AnaliseDetalhada from "../components/viz/AnaliseDetalhada";
 import { agruparMotivos } from "../lib/taxonomia";
 import { diaRef } from "../lib/ref";
 import { compararMesmoDia, metaDoMotorista } from "../lib/metas";
@@ -274,6 +275,11 @@ export function PainelView({ base, history, openScreen, onImport, drivers = [] }
                 </div>
               </div>
             )}
+
+            <details className="cargas" style={{ margin: "1rem 0" }}>
+              <summary>Análise detalhada</summary>
+              <AnaliseDetalhada days={v.ok} base={base} />
+            </details>
 
             {(previsao || topBairros.length > 0) && (
               <div className="viz-grid">
