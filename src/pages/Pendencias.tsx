@@ -33,7 +33,7 @@ export default function Pendencias({ openScreen }: { openScreen: (id: ActiveScre
       <section className="pane active">
         <div className="panel">
           <h2>Pendências de hoje</h2>
-          <div className="empty"><h3>Nenhum dia carregado</h3><p>Vá em Operação → Monitoramento de bipagem de entrega e importe as planilhas.</p></div>
+          <div className="empty"><h3>Nenhum dia carregado</h3><p>Importe as planilhas do JMS (botão no topo) ou abra Dia a dia → Entregas do dia.</p></div>
         </div>
       </section>
     );

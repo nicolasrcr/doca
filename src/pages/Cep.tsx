@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useToast } from "../hooks/useToast";
+import { Dica } from "../components/ui";
 
 interface ViaCep {
   cep: string;
@@ -40,8 +41,10 @@ export default function Cep() {
   return (
     <section className="pane active">
       <div className="panel">
-        <h2>Consulta CEP</h2>
-        <p className="muted">Digite os 8 dígitos do CEP para localizar o endereço — útil para conferir o bairro na hora de cadastrar a tabela de preços.</p>
+        <div className="pageHead">
+          <h2>Consulta CEP</h2>
+          <Dica>Digite os 8 dígitos do CEP para localizar o endereço — útil para conferir o bairro na hora de cadastrar a tabela de preços.</Dica>
+        </div>
         <input
           className="mono"
           placeholder="00000-000"

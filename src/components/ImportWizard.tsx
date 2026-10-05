@@ -235,7 +235,7 @@ export default function ImportWizard({ onDone, initialFiles }: { onDone: (firstB
             : <>Nenhum dia foi gravado.</>}
         </p>
         {!scan?.carta && (
-          <div className="warnbox">Os dias foram salvos como <b>incompletos</b>: falta a Carta de porte para calcular as entregas. Importe-a em Operação para completar a análise.</div>
+          <div className="warnbox">Os dias foram salvos como <b>incompletos</b>: falta a Carta de porte para calcular as entregas. Importe-a para completar a análise.</div>
         )}
         <button className="btn primary" autoFocus onClick={() => onDone(summary.firstBaseId, summary.created + summary.existing)}>{summary.created + summary.existing > 1 ? "Ver a visão geral das bases" : "Ver o painel da base"}</button>
       </div>
@@ -246,7 +246,7 @@ export default function ImportWizard({ onDone, initialFiles }: { onDone: (firstB
     return (
       <div className="panel" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); if (step === "preview") handleFiles(e.dataTransfer.files); }}>
         <h3>Encontrei {scan.groups.length === 1 ? "1 base" : `${scan.groups.length} bases`} nas planilhas</h3>
-        <p className="muted small">Confira, ajuste os nomes e as datas se precisar, e confirme. Nada é criado antes da sua confirmação.</p>
+        <p className="muted small">Confira os nomes e as datas e confirme. Nada é criado antes disso.</p>
         <div className="row" style={{ flexWrap: "wrap", gap: ".4rem", margin: ".4rem 0" }}>
           {files.map((f) => (
             <span key={fileId(f)} className="badge" style={{ display: "inline-flex", alignItems: "center", gap: ".4rem" }}>
@@ -277,8 +277,7 @@ export default function ImportWizard({ onDone, initialFiles }: { onDone: (firstB
           <div className="okbox">Achei o bairro/CEP do destinatário de {fmtN(scan.enderecos)} pedidos: a análise de rotas por bairro fica disponível.</div>
         ) : (
           <div className="infobox">
-            Opcional: para a análise de <b>rotas e bairros críticos</b>, adicione também um relatório do JMS que traga o <b>distrito/bairro ou o CEP do
-            destinatário</b> de cada pedido (com “+ Adicionar mais arquivos”). Sem ele, o resto da análise funciona normalmente.
+            Quer ver <b>bairros críticos</b>? Adicione também um relatório com o bairro ou CEP do destinatário (“+ Adicionar mais arquivos”).
           </div>
         )}
         {scan.ignored.length > 0 && (
@@ -286,10 +285,7 @@ export default function ImportWizard({ onDone, initialFiles }: { onDone: (firstB
         )}
         {!scan.carta && (
           <div className="warnbox">
-            <b>Falta a “Carta de porte”.</b> É ela que confirma quais pacotes foram entregues, então o número de entregas ainda
-            não pode ser calculado. Vou salvar o que já dá (pacotes, motivos de problema, motoristas) e marcar esses dias como
-            incompletos, com um alerta nas telas. Para ver a saúde completa da base, importe também a Carta de porte (você pode
-            adicionar o arquivo agora, com “+ Adicionar mais arquivos”, ou depois em Operação).
+            <b>Falta a Carta de porte.</b> Sem ela não dá para confirmar as entregas: os dias entram como incompletos. Adicione o arquivo acima para completar.
           </div>
         )}
         <div className="tablewrap">

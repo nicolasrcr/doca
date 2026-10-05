@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
 import { fmtR, todayISO } from "../lib/format";
+import { Dica } from "../components/ui";
 
 const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -39,11 +40,11 @@ export default function Precos() {
   return (
     <section className="pane active">
       <div className="panel" style={{ marginBottom: "1rem" }}>
-        <h2 style={{ margin: "0 0 .25rem" }}>Tabela de preços por motorista e bairro</h2>
-        <p className="muted small">
-          Prioridade: valor específico de motorista+bairro → valor padrão do bairro (todos os motoristas) → valor geral do
-          motorista → padrão da base. Deixe "Bairro" em branco para valer em qualquer bairro.
-        </p>
+        <div className="pageHead">
+          <h2>Tabela de preços por motorista e bairro</h2>
+          <Dica>Prioridade: valor específico de motorista+bairro → valor padrão do bairro (todos os motoristas) → valor geral do
+          motorista → padrão da base. Deixe "Bairro" em branco para valer em qualquer bairro.</Dica>
+        </div>
         {canEdit && (
           <div className="toolbar">
             <select value={ruleDriver} onChange={(e) => setRuleDriver(e.target.value)}>
@@ -92,8 +93,10 @@ export default function Precos() {
       </div>
 
       <div className="panel" style={{ marginBottom: "1rem" }}>
-        <h2 style={{ margin: "0 0 .25rem" }}>Dias especiais (acréscimo)</h2>
-        <p className="muted small">Ex.: sábado paga R$ 1,00 a mais por entrega — cadastre um recorrente para "Sábado". O acréscimo soma ao valor do bairro/motorista naquele dia.</p>
+        <div className="pageHead">
+          <h2>Dias especiais (acréscimo)</h2>
+          <Dica>Ex.: sábado paga R$ 1,00 a mais por entrega — cadastre um recorrente para "Sábado". O acréscimo soma ao valor do bairro/motorista naquele dia.</Dica>
+        </div>
         {canEdit && (
           <div className="toolbar">
             <select value={dayKind} onChange={(e) => setDayKind(e.target.value as "data" | "semana")}>
@@ -149,8 +152,10 @@ export default function Precos() {
       </div>
 
       <div className="panel">
-        <h2 style={{ margin: "0 0 .25rem" }}>Descontos e bônus avulsos</h2>
-        <p className="muted small">Lançamentos aqui entram automaticamente como item itemizado no próximo fechamento gerado para o motorista, dentro do período da data informada.</p>
+        <div className="pageHead">
+          <h2>Descontos e bônus avulsos</h2>
+          <Dica>Lançamentos aqui entram automaticamente como item itemizado no próximo fechamento gerado para o motorista, dentro do período da data informada.</Dica>
+        </div>
         {canEdit && (
           <div className="toolbar">
             <select value={adjDriver} onChange={(e) => setAdjDriver(e.target.value)}>

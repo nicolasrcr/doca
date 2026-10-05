@@ -5,6 +5,7 @@ import { readRows, prepare } from "../lib/parse";
 import { fmtN, todayISO } from "../lib/format";
 import { contextoWhats } from "../lib/share";
 import type { SheetTable } from "../lib/types";
+import { Dica } from "../components/ui";
 
 interface AgingRow {
   cod: string;
@@ -118,12 +119,12 @@ export default function PacotesParados() {
     <section className="pane active">
       {!sheet ? (
         <div className="panel">
-          <h2>Pacotes parados (aging)</h2>
-          <p className="muted">
-            Importe o relatório de rastreamento/aging do JMS (coluna "Aging" com valores como "Exceed 1 day with no
+          <div className="pageHead">
+            <h2>Pacotes parados (aging)</h2>
+            <Dica>Importe o relatório de rastreamento/aging do JMS (coluna "Aging" com valores como "Exceed 1 day with no
             track"). O Doca monta automaticamente o mesmo cruzamento que você faria numa tabela dinâmica no Excel —
-            por unidade responsável e faixa de dias sem rastreio.
-          </p>
+            por unidade responsável e faixa de dias sem rastreio.</Dica>
+          </div>
           <div className="drop" style={{ maxWidth: 420 }}>
             <h3>Relatório de aging <span className="tag">JMS · Monitoramento de movimentação</span></h3>
             <input type="file" accept=".csv,.xlsx" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />

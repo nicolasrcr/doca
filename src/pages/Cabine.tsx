@@ -1,5 +1,6 @@
 import { useDoca } from "../hooks/DocaContext";
 import { useToast, csvBlob, downloadBlob } from "../hooks/useToast";
+import { Dica } from "../components/ui";
 
 export default function Cabine() {
   const { curBase, history, drivers, occRows } = useDoca();
@@ -34,8 +35,10 @@ export default function Cabine() {
   return (
     <section className="pane active">
       <div className="panel">
-        <h2>Cabine de dados</h2>
-        <p className="muted small">Exportação bruta para quem quiser cruzar os números em outra ferramenta (Excel, Power BI etc.).</p>
+        <div className="pageHead">
+          <h2>Cabine de dados</h2>
+          <Dica>Exportação bruta para quem quiser cruzar os números em outra ferramenta (Excel, Power BI etc.).</Dica>
+        </div>
         <div className="row" style={{ marginTop: ".75rem" }}>
           <button className="btn primary" onClick={exportHist}>Exportar histórico completo (CSV)</button>
           <button className="btn" onClick={exportDrv}>Exportar motoristas cadastrados (CSV)</button>

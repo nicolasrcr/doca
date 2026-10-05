@@ -40,6 +40,12 @@ export default function Sidebar({
         >
           <DocaLogo size={22} />
         </button>
+        <div className="navcat">
+          <button className={"navcat-btn " + (activeId === "home" ? "open" : "")} onClick={onHome}>
+            <span className="ic"><CatIcon id="inicio" /></span>
+            Início
+          </button>
+        </div>
         {CATS.map((cat) => {
           const open = expandedCat === cat.id;
           return (

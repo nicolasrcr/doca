@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
 import { useAuth } from "../hooks/useAuth";
 import type { OrgRole } from "../lib/types";
+import { Dica } from "../components/ui";
 
 const ROLE_LABEL: Record<OrgRole, string> = { admin: "Gestor", editor: "Operador", viewer: "Consulta" };
 const ROLE_HELP = "Gestor: administra a empresa, cria bases e convida pessoas. Operador: importa planilhas e opera. Consulta: só visualiza.";
@@ -68,11 +69,11 @@ export default function Orgs() {
     <section className="pane active">
       {!cur && !isSuperAdmin && (
         <div className="panel">
-          <h2>Monte sua empresa</h2>
-          <p className="muted small">
-            Tem mais de uma base ou uma equipe que usa o sistema? Crie sua empresa: você passa a ser o gestor, cria quantas
-            bases quiser e convida as pessoas uma única vez, valendo para todas as bases.
-          </p>
+          <div className="pageHead">
+            <h2>Monte sua empresa</h2>
+            <Dica>Tem mais de uma base ou uma equipe que usa o sistema? Crie sua empresa: você passa a ser o gestor, cria quantas
+            bases quiser e convida as pessoas uma única vez, valendo para todas as bases.</Dica>
+          </div>
           <div className="row" style={{ margin: "1rem 0", alignItems: "flex-end" }}>
             <label className="inline" style={{ flexDirection: "column", alignItems: "flex-start", gap: ".25rem" }}>
               <span className="small muted">Nome da empresa</span>
@@ -97,8 +98,10 @@ export default function Orgs() {
 
       {isSuperAdmin && (
         <div className="panel" style={{ marginBottom: "1rem" }}>
-          <h2>Pedidos de acesso{accessRequests.some((r) => r.status === "pendente") ? ` (${accessRequests.filter((r) => r.status === "pendente").length} pendente${accessRequests.filter((r) => r.status === "pendente").length === 1 ? "" : "s"})` : ""}</h2>
-          <p className="muted small">Pedidos enviados pela página inicial. Aprovar libera o e-mail para criar a conta; a pessoa precisa ser avisada por você.</p>
+          <div className="pageHead">
+            <h2>Pedidos de acesso{accessRequests.some((r) => r.status === "pendente") ? ` (${accessRequests.filter((r) => r.status === "pendente").length} pendente${accessRequests.filter((r) => r.status === "pendente").length === 1 ? "" : "s"})` : ""}</h2>
+            <Dica>Pedidos enviados pela página inicial. Aprovar libera o e-mail para criar a conta; a pessoa precisa ser avisada por você.</Dica>
+          </div>
           {accessRequests.length === 0 ? (
             <div className="infobox">Nenhum pedido até agora.</div>
           ) : (
@@ -132,11 +135,11 @@ export default function Orgs() {
 
       {isSuperAdmin && (
         <div className="panel" style={{ marginBottom: "1rem" }}>
-          <h2>Nova empresa de parceiro</h2>
-          <p className="muted small">
-            Cria a empresa e define o gestor dela. A pessoa precisa já ter conta; se ainda não tem, autorize o e-mail dela
-            mais abaixo e peça para ela se cadastrar primeiro.
-          </p>
+          <div className="pageHead">
+            <h2>Nova empresa de parceiro</h2>
+            <Dica>Cria a empresa e define o gestor dela. A pessoa precisa já ter conta; se ainda não tem, autorize o e-mail dela
+            mais abaixo e peça para ela se cadastrar primeiro.</Dica>
+          </div>
           <div className="row" style={{ margin: "1rem 0", alignItems: "flex-end" }}>
             <label className="inline" style={{ flexDirection: "column", alignItems: "flex-start", gap: ".25rem" }}>
               <span className="small muted">Nome do parceiro</span>
@@ -244,10 +247,10 @@ export default function Orgs() {
 
       {isSuperAdmin && (
         <div className="panel">
-          <h2>E-mails autorizados a se cadastrar</h2>
-          <p className="muted small">
-            O cadastro é restrito: só entra quem tem o e-mail liberado aqui ou convidado por um gestor de empresa.
-          </p>
+          <div className="pageHead">
+            <h2>E-mails autorizados a se cadastrar</h2>
+            <Dica>O cadastro é restrito: só entra quem tem o e-mail liberado aqui ou convidado por um gestor de empresa.</Dica>
+          </div>
           <div className="row" style={{ margin: "1rem 0", alignItems: "flex-end" }}>
             <input type="email" value={freeEmail} placeholder="cliente@empresa.com" onChange={(e) => setFreeEmail(e.target.value)} style={{ minWidth: 260 }} />
             <button

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
 import { useToast, copyText, downloadBlob } from "../hooks/useToast";
 import { supabase } from "../lib/supabase";
+import { Dica } from "../components/ui";
 
 export default function Integracoes() {
   const { curBase, result, updateBase, dayDate, canEdit } = useDoca();
@@ -24,8 +25,10 @@ export default function Integracoes() {
   return (
     <section className="pane active">
       <div className="panel">
-        <h2>Serviços integrados</h2>
-        <p className="muted">O Doca envia o resumo do dia automaticamente para um webhook seu (ex.: um fluxo n8n com a API oficial do WhatsApp Business), sem precisar copiar e colar toda vez.</p>
+        <div className="pageHead">
+          <h2>Serviços integrados</h2>
+          <Dica>O Doca envia o resumo do dia automaticamente para um webhook seu (ex.: um fluxo n8n com a API oficial do WhatsApp Business), sem precisar copiar e colar toda vez.</Dica>
+        </div>
         <div className="form" style={{ margin: "1rem 0" }}>
           <label htmlFor="setWebhook">Endereço do webhook (WhatsApp)</label>
           <input id="setWebhook" value={webhook} disabled={!canEdit} placeholder="https://seu-n8n.com/webhook/..." onChange={(e) => setWebhook(e.target.value)} />

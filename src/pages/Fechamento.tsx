@@ -4,6 +4,7 @@ import { useDialog } from "../hooks/useDialog";
 import { downloadBlob, copyText, useToast } from "../hooks/useToast";
 import { brDate, fmtN, fmtR, todayISO } from "../lib/format";
 import type { Payout, PayoutItem } from "../lib/types";
+import { Dica } from "../components/ui";
 
 function exportPayoutCsv(p: Payout) {
   const q = (v: unknown) => `"${String(v).replace(/"/g, '""')}"`;
@@ -198,8 +199,10 @@ export default function Fechamento() {
   return (
     <section className="pane active">
       <div className="panel">
-        <h2>Fechamento de pagamento</h2>
-        <p className="muted">Calcula o repasse de cada motorista pelas entregas confirmadas no histórico, no período escolhido, usando a tabela de preços por motorista/bairro e os dias especiais cadastrados.</p>
+        <div className="pageHead">
+          <h2>Fechamento de pagamento</h2>
+          <Dica>Calcula o repasse de cada motorista pelas entregas confirmadas no histórico, no período escolhido, usando a tabela de preços por motorista/bairro e os dias especiais cadastrados.</Dica>
+        </div>
         <div className="form" style={{ margin: "1rem 0" }}>
           <label htmlFor="poStart">Início do período</label><input id="poStart" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
           <label htmlFor="poEnd">Fim do período</label><input id="poEnd" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />

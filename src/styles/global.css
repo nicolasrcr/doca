@@ -360,3 +360,30 @@ main{padding:1.5rem 1.75rem}
 /* Conferência QR: pausa obrigatória na troca de motorista */
 .qrSwitch{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);display:grid;place-items:center;padding:1rem}
 .qrSwitchBox{background:var(--surface);color:var(--ink);border-radius:var(--r-lg);padding:2rem;max-width:460px;width:100%;text-align:center;box-shadow:var(--shadow-lg);border:3px solid var(--warn)}
+
+/* Menos texto e menos botões: "?" com explicação e menu de ações */
+.dica{position:relative;display:inline-flex;vertical-align:middle;margin-left:.35rem}
+.dicaBtn{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:.72rem;font-weight:700;line-height:1;cursor:pointer;padding:0}
+.dicaBtn:hover{color:var(--ink);border-color:var(--ink)}
+.dicaBox{position:absolute;left:0;top:26px;z-index:40;width:min(320px,80vw);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:.7rem .85rem;font-size:.85rem;font-weight:400;line-height:1.45;letter-spacing:0;text-transform:none}
+.menuAcoes{position:relative;display:inline-block}
+.menuLista{position:absolute;top:calc(100% + 6px);z-index:40;min-width:230px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:.35rem;display:grid;gap:1px}
+.menuLista.right{right:0}.menuLista.left{left:0}
+.menuItem{display:block;width:100%;text-align:left;background:none;border:0;border-radius:var(--r-sm);padding:.55rem .7rem;cursor:pointer;font-size:.88rem;color:var(--ink);text-transform:none;letter-spacing:0;font-weight:500}
+.menuItem:hover:not(:disabled){background:var(--hover)}
+.menuItem:disabled{opacity:.45;cursor:not-allowed}
+.menuItem+.menuItem{margin-top:0}
+.pageHead{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.9rem}
+.pageHead h2{margin:0}
+.pageHead .spacer{flex:1}
+
+/* Arquivos do dia recolhíveis (Entregas) */
+details.cargas>summary{cursor:pointer;font-weight:600;padding:.55rem .1rem;list-style:none;display:flex;align-items:center;gap:.5rem;color:var(--ink)}
+details.cargas>summary::-webkit-details-marker{display:none}
+details.cargas>summary::before{content:"▸";color:var(--muted);transition:transform .15s}
+details.cargas[open]>summary::before{transform:rotate(90deg)}
+details.insightCard>summary::-webkit-details-marker{display:none}
+details.passos>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:.6rem}
+details.passos>summary::-webkit-details-marker{display:none}
+.passosBarra{flex:0 0 90px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.passosBarra i{display:block;height:100%;background:var(--ink)}

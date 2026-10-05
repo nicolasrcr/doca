@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDoca } from "../hooks/DocaContext";
 import { useAuth } from "../hooks/useAuth";
+import { Dica } from "../components/ui";
 
 export default function Membros() {
   const { curBase, members, role, inviteMember, updateMemberRole, removeMember } = useDoca();
@@ -24,12 +25,12 @@ export default function Membros() {
   return (
     <section className="pane active">
       <div className="panel">
-        <h2>Membros e permissões</h2>
-        <p className="muted small">
-          Quem tem acesso à base <b>{curBase.name}</b>. <b>Editor</b> pode importar planilhas, salvar o histórico e
+        <div className="pageHead">
+          <h2>Membros e permissões</h2>
+          <Dica>Quem tem acesso à base <b>{curBase.name}</b>. <b>Editor</b> pode importar planilhas, salvar o histórico e
           alterar cadastros; <b>leitor</b> só visualiza. A pessoa convidada precisa já ter uma conta no Doca com esse
-          e-mail.
-        </p>
+          e-mail.</Dica>
+        </div>
 
         {isOwner && (
           <div className="row" style={{ margin: "1rem 0", alignItems: "flex-end" }}>

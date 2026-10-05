@@ -2,6 +2,12 @@ import { useMemo, useState } from "react";
 import { useDoca } from "../hooks/DocaContext";
 import { fmtR } from "../lib/format";
 import type { Driver } from "../lib/types";
+import { Dica } from "../components/ui";
+import { analisarBase, LIMITES } from "../lib/insights";
+import { diaRef } from "../lib/ref";
+import { metaDoMotorista } from "../lib/metas";
+import { fmtN, fmtPct } from "../lib/format";
+import { ChartCard, DataTable, HBars, TipRow, TipTitle, VizRoot, type HBarDatum } from "../components/viz/Viz";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { copyText, useToast } from "../hooks/useToast";
@@ -53,7 +59,7 @@ function DriverRow({ d, canEdit, onSave, onDelete, rateHint, onLink, onRevoke }:
 }
 
 export default function Motoristas() {
-  const { curBase, drivers, updateDriver, deleteDriver, addDriver, result, canEdit, audit } = useDoca();
+  const { curBase, drivers, updateDriver, deleteDriver, addDriver, result, canEdit, audit, history } = useDoca();
   const { user } = useAuth();
   const toast = useToast();
 
@@ -73,30 +79,63 @@ export default function Motoristas() {
   };
 
   const seenInData = useMemo(() => {
-    if (!result) return [];
     const known = new Set(drivers.map((d) => d.name));
-    return result.list.map((d) => d.nome).filter((n) => !known.has(n));
-  }, [result, drivers]);
+    const nomes = new Set<string>();
+    if (result) result.list.forEach((d) => nomes.add(d.nome));
+    history.slice(-30).forEach((h) => (h.motoristas || []).forEach((m) => nomes.add(m.n)));
+    return [...nomes].filter((n) => !known.has(n)).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [result, drivers, history]);
+
+  // resultado dos últimos 14 dias salvos, por motorista
+  const saude = useMemo(() => (curBase && history.length ? analisarBase(history, curBase, 14, diaRef(history)) : null), [curBase, history]);
+  const metaBase = (curBase?.meta ?? 95) / 100;
+  const alerta = (curBase?.alerta ?? 70) / 100;
+  const rows = (saude?.motoristas || []).filter((m) => m.t >= LIMITES.minPacotesMotorista);
+  const pctData: HBarDatum[] = rows.slice().sort((a, b) => a.pct - b.pct).slice(0, 12).map((m) => {
+    const dm = drivers.find((x) => x.name === m.nome);
+    return {
+      label: m.nome, value: m.pct, text: fmtPct(m.pct), destaque: m.pct < Math.max(alerta, dm?.meta ? metaDoMotorista(dm, curBase!) : 0),
+      tip: <><TipTitle>{m.nome}</TipTitle><TipRow label="Entregues" value={`${fmtN(m.e)} de ${fmtN(m.t)}`} /><TipRow label="Dias abaixo do alerta" value={String(m.diasAbaixo)} /></>,
+    };
+  });
+  const maxT = Math.max(1, ...rows.map((m) => m.t));
+  const volData: HBarDatum[] = rows.slice().sort((a, b) => b.t - a.t).slice(0, 12).map((m) => ({
+    label: m.nome, value: m.t / maxT, text: m.dias > 1 ? `${fmtN(m.t)} · ${fmtN(Math.round(m.porDia))}/dia` : fmtN(m.t),
+    tip: <><TipTitle>{m.nome}</TipTitle><TipRow label="Pacotes" value={fmtN(m.t)} /><TipRow label="Média por dia" value={fmtN(Math.round(m.porDia))} /></>,
+  }));
 
   return (
     <section className="pane active">
+      {rows.length > 0 && (
+        <VizRoot>
+          <div className="viz-grid">
+            <div className="viz-span-6">
+              <ChartCard title="% entregue por motorista" caption="Últimos 14 dias salvos · a linha é a meta"
+                table={<DataTable cols={["Motorista", "% entregue", "Pacotes"]} rows={rows.map((m) => [m.nome, fmtPct(m.pct), fmtN(m.t)])} />}>
+                <HBars name="Percentual entregue por motorista" data={pctData} refValue={metaBase} refLabel={`meta ${Math.round(metaBase * 100)}%`} />
+              </ChartCard>
+            </div>
+            <div className="viz-span-6">
+              <ChartCard title="Pacotes por motorista" caption="Quem carrega mais volume"
+                table={<DataTable cols={["Motorista", "Pacotes", "Média por dia"]} rows={rows.map((m) => [m.nome, fmtN(m.t), fmtN(Math.round(m.porDia))])} />}>
+                <HBars name="Pacotes por motorista" data={volData} />
+              </ChartCard>
+            </div>
+          </div>
+        </VizRoot>
+      )}
       <div className="panel">
-        <div className="row">
-          <h2 style={{ margin: 0 }}>Motoristas da base</h2>
+        <div className="pageHead">
+          <h2>Motoristas</h2>
+          <Dica>Nomes que aparecem diferentes no JMS podem ser o mesmo motorista: cadastre os apelidos para unir. A meta própria, se preenchida, vale no lugar da meta da base.</Dica>
           <span className="spacer"></span>
+          {seenInData.length > 0 && canEdit && (
+            <button className="btn" onClick={async () => { for (const n of seenInData) await addDriver(n); }}>Cadastrar {seenInData.length} dos arquivos</button>
+          )}
           {canEdit && (
-            <button
-              className="btn primary"
-              onClick={() => {
-                const n = prompt("Nome do motorista:");
-                if (n && n.trim()) addDriver(n);
-              }}
-            >
-              Novo motorista
-            </button>
+            <button className="btn primary" onClick={() => { const n = prompt("Nome do motorista:"); if (n && n.trim()) addDriver(n); }}>Novo motorista</button>
           )}
         </div>
-        <p className="muted small">Nomes que aparecem diferentes no JMS podem ser apelidos do mesmo motorista. Cadastre-os em "Apelidos" para unificar.</p>
         <div className="tablewrap">
           <table className="drv">
             <thead>
@@ -118,14 +157,6 @@ export default function Motoristas() {
             </tbody>
           </table>
         </div>
-        {seenInData.length > 0 && canEdit && (
-          <div className="infobox" style={{ marginTop: ".75rem" }}>
-            Motoristas nas planilhas de hoje que ainda não têm cadastro: {seenInData.join(", ")}.{" "}
-            <button className="btn small" onClick={async () => { for (const n of seenInData) await addDriver(n); }}>
-              Cadastrar todos
-            </button>
-          </div>
-        )}
       </div>
     </section>
   );

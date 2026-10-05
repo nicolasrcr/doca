@@ -4,10 +4,12 @@ import { fmtN, fmtPct, todayISO } from "../lib/format";
 import { analisarBase, type Area, type Farol, type Insight } from "../lib/insights";
 import type { ActiveScreen } from "../hooks/useNav";
 import { useAuth } from "../hooks/useAuth";
+import { Dica } from "../components/ui";
 import { useToast } from "../hooks/useToast";
 import { pctUltimos7 } from "../lib/acoes";
 import { criarAcao } from "../lib/acoesDb";
 import { sugerirRedistribuicao } from "../lib/rotas";
+import { diaRef } from "../lib/ref";
 
 const shiftISO = (iso: string, d: number) => {
   const x = new Date(iso + "T12:00:00");
@@ -33,18 +35,18 @@ export function FarolDot({ farol, size = 12 }: { farol: Farol; size?: number }) 
   return <span aria-label={FAROL_LABEL[farol]} style={{ display: "inline-block", width: size, height: size, borderRadius: "50%", background: FAROL_COR[farol], marginRight: ".4rem", verticalAlign: "middle" }} />;
 }
 
-function InsightCard({ i, onPlan }: { i: Insight; onPlan?: (i: Insight) => void }) {
+function InsightCard({ i, onPlan, aberto = false }: { i: Insight; onPlan?: (i: Insight) => void; aberto?: boolean }) {
   return (
-    <div className="panel" style={{ marginBottom: ".6rem", borderLeft: `4px solid ${i.nivel === "critico" ? "var(--bad)" : i.nivel === "aviso" ? "var(--warn)" : "var(--ok)"}` }}>
-      <div className="row">
+    <details className="panel insightCard" open={aberto} style={{ marginBottom: ".5rem", borderLeft: `4px solid ${i.nivel === "critico" ? "var(--bad)" : i.nivel === "aviso" ? "var(--warn)" : "var(--ok)"}` }}>
+      <summary className="row" style={{ cursor: "pointer", listStyle: "none" }}>
         <b>{i.titulo}</b>
         <span className="spacer"></span>
         <span className={"badge " + NIVEL_CLASS[i.nivel]}>{NIVEL_LABEL[i.nivel]}</span>
-      </div>
-      <p className="muted small" style={{ margin: ".25rem 0" }}>{i.detalhe}</p>
-      {i.acao && <p style={{ margin: ".25rem 0 0" }}><b>O que fazer:</b> {i.acao}</p>}
-      {onPlan && <button className="btn small" style={{ marginTop: ".4rem" }} onClick={() => onPlan(i)}>＋ Colocar no plano de ação</button>}
-    </div>
+      </summary>
+      <p className="muted small" style={{ margin: ".4rem 0 .2rem" }}>{i.detalhe}</p>
+      {i.acao && <p style={{ margin: ".2rem 0 0" }}>{i.acao}</p>}
+      {onPlan && <button className="btn small" style={{ marginTop: ".5rem" }} onClick={() => onPlan(i)}>＋ Plano de ação</button>}
+    </details>
   );
 }
 
@@ -54,10 +56,10 @@ export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) =
   const toast = useToast();
   const [periodo, setPeriodo] = useState(7);
 
-  const s = useMemo(() => (curBase ? analisarBase(history, curBase, periodo, todayISO()) : null), [curBase, history, periodo]);
+  const s = useMemo(() => (curBase ? analisarBase(history, curBase, periodo, diaRef(history)) : null), [curBase, history, periodo]);
   if (!curBase || !s) return null;
 
-  const sugestoes = sugerirRedistribuicao(history.filter((d) => d.data >= shiftISO(todayISO(), -(periodo - 1))), (curBase.meta ?? 95) / 100);
+  const sugestoes = sugerirRedistribuicao(history.filter((d) => d.data >= shiftISO(diaRef(history), -(periodo - 1))), (curBase.meta ?? 95) / 100);
   const noPlano = async (i: Insight) => {
     if (!user) return;
     const ult = history.length ? history[history.length - 1].data : todayISO();
@@ -72,26 +74,21 @@ export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) =
 
   return (
     <section className="pane active">
-      <div className="panel" style={{ marginBottom: "1rem" }}>
-        <div className="row">
-          <h2 style={{ margin: 0 }}>Saúde da base {curBase.name}</h2>
-          <span className="spacer"></span>
-          <select value={periodo} onChange={(e) => setPeriodo(Number(e.target.value))}>
-            <option value={7}>Últimos 7 dias</option>
-            <option value={14}>Últimos 14 dias</option>
-            <option value={30}>Últimos 30 dias</option>
-          </select>
-        </div>
-        <p className="muted small">
-          Sugestões automáticas baseadas nos números dos seus relatórios do JMS: cada uma mostra os dados que a originaram. A
-          meta é a que você definiu para esta base ({meta}%); você pode mudá-la em <a href="#" onClick={(e) => { e.preventDefault(); openScreen("ajustes"); }}>Dados da base</a>.
-        </p>
+      <div className="pageHead">
+        <h2>Saúde e sugestões</h2>
+        <Dica>Sugestões automáticas feitas com os números dos seus relatórios do JMS, cada uma com os dados que a originaram. A meta é a da base ({meta}%); mude em <a href="#" onClick={(e) => { e.preventDefault(); openScreen("ajustes"); }}>Dados e metas da base</a>.</Dica>
+        <span className="spacer"></span>
+        <select aria-label="Período" value={periodo} onChange={(e) => setPeriodo(Number(e.target.value))}>
+          <option value={7}>7 dias</option>
+          <option value={14}>14 dias</option>
+          <option value={30}>30 dias</option>
+        </select>
       </div>
 
       {s.diasSemCarta > 0 && (
         <div className="warnbox" style={{ marginBottom: "1rem" }}>
           <b>Estamos calculando com dados incompletos.</b> Falta o número de entregas em {s.diasSemCarta} de {s.dias} dia{s.dias === 1 ? "" : "s"}{" "}
-          (faltou a Carta de porte). Sem ela não dá para fazer a análise quantitativa e qualitativa desses dias. Importe a Carta de porte em Operação e salve o dia.
+          (faltou a Carta de porte). Sem ela não dá para fazer a análise quantitativa e qualitativa desses dias. Importe a Carta de porte (botão no topo) e salve o dia.
         </div>
       )}
 
@@ -128,7 +125,7 @@ export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) =
         {s.prioridades.length === 0 ? (
           <div className="okbox">Nenhuma prioridade crítica no período. Continue acompanhando o farol.</div>
         ) : (
-          s.prioridades.map((i, n) => (<div key={i.id}><div className="small muted">Prioridade {n + 1}</div><InsightCard i={i} onPlan={canEdit ? noPlano : undefined} /></div>))
+          s.prioridades.map((i, n) => (<div key={i.id}><div className="small muted">Prioridade {n + 1}</div><InsightCard i={i} aberto={n === 0} onPlan={canEdit ? noPlano : undefined} /></div>))
         )}
       </div>
 

@@ -4,6 +4,7 @@ import { useToast, copyText } from "../hooks/useToast";
 import { readRows } from "../lib/parse";
 import { norm } from "../lib/format";
 import { supabase } from "../lib/supabase";
+import { Dica } from "../components/ui";
 
 interface QrItem {
   code: string;
@@ -343,8 +344,10 @@ export default function QrConf() {
     <section className="pane active">
       {!items.length ? (
         <div className="panel">
-          <h2>Conferência QR</h2>
-          <p className="muted">Gera o QR de cada pedido pendente, agrupado por motorista, para bipar com o leitor do JMS. O progresso é salvo sozinho e funciona sem internet.</p>
+          <div className="pageHead">
+            <h2>Conferência QR</h2>
+            <Dica>Gera o QR de cada pedido pendente, agrupado por motorista, para bipar com o leitor do JMS. O progresso é salvo sozinho e funciona sem internet.</Dica>
+          </div>
           {salvas.length > 0 && (
             <div className="infobox" style={{ marginBottom: ".8rem" }}>
               <b>Conferência em andamento</b>

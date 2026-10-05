@@ -10,7 +10,6 @@ import { DefinirSenhaPage } from "./components/Senha";
 import ImportWizard from "./components/ImportWizard";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
-import TabStrip from "./components/TabStrip";
 import Home from "./pages/Home";
 import Entregas from "./pages/Entregas";
 import Historico from "./pages/Historico";
@@ -66,7 +65,7 @@ function ShellBody({ nav }: { nav: Nav }) {
   if (!bases.length) {
     return (
       <>
-        <Header onHamb={() => {}} onHome={() => {}} onNewBase={async (name) => { const id = await createBase(name); selectBase(id); }} />
+        <Header onHamb={() => {}} onNewBase={async (name) => { const id = await createBase(name); selectBase(id); }} />
         <main style={{ maxWidth: 900, margin: "0 auto", padding: "1.5rem 1rem" }}>
           <h2>Vamos começar</h2>
           <p className="muted">Escolha como quer montar suas bases. Dá para fazer das duas formas depois.</p>
@@ -136,11 +135,9 @@ function ShellBody({ nav }: { nav: Nav }) {
       <div className="shell">
         <Header
           onHamb={() => nav.setSidebarOpen((o) => !o)}
-          onHome={() => nav.openScreen("home")}
           onNewBase={async (name) => { const id = await createBase(name); selectBase(id); nav.resetToHome(); }}
         />
         <div className="content">
-          <TabStrip openTabs={nav.openTabs} activeId={nav.activeId} openScreen={nav.openScreen} closeTab={nav.closeTab} />
           <main>
             <AnimatePresence mode="wait">
               {curBase && (

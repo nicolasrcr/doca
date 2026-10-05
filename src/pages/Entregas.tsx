@@ -8,7 +8,10 @@ import { readRows, prepare, detectReportType } from "../lib/parse";
 import { faltam, level } from "../lib/compute";
 import { fmtN, fmtPct, brDate } from "../lib/format";
 import { contextoWhats, geradoEm } from "../lib/share";
-import type { SheetTable } from "../lib/types";
+import type { DayRecord, SheetTable } from "../lib/types";
+import { buildDayRow } from "../lib/dayRow";
+import DiaCharts from "../components/viz/DiaCharts";
+import { Dica, Menu, MenuItem } from "../components/ui";
 import type { ActiveScreen } from "../hooks/useNav";
 
 function DropZone({
@@ -113,6 +116,8 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
     saveDay,
     canEdit,
     audit,
+    history,
+    drivers,
   } = useDoca();
   const toast = useToast();
   const dialog = useDialog();
@@ -184,15 +189,6 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
     };
   }, [result]);
 
-  const bairrosRanked = useMemo(() => {
-    if (!result) return [];
-    return Object.entries(result.bairroStats)
-      .map(([bairro, s]) => ({ bairro, ...s, pct: s.total ? s.e / s.total : 0 }))
-      .filter((b) => b.total >= 3) // ignora bairros com volume irrisório, que distorcem o ranking
-      .sort((a, b) => a.pct - b.pct)
-      .slice(0, 8);
-  }, [result]);
-
   const filteredSorted = useMemo(() => {
     if (!result) return [];
     const nq = q.toLowerCase();
@@ -207,8 +203,12 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
     return L;
   }, [result, q, sort]);
 
-  const motivosList = useMemo(() => (result ? Object.entries(result.motivos).sort((a, b) => b[1] - a[1]) : []), [result]);
-  const maxMotivo = motivosList.length ? motivosList[0][1] : 1;
+  // dia que acabou de ser carregado, no mesmo formato do histórico, para os gráficos
+  const diaAtual = useMemo(
+    () => (result && curBase ? ({ id: "atual", ...buildDayRow({ baseId: curBase.id, data: dayDate, meta: curBase.meta, salvoPor: "", result, coleta: coletaResult }) } as unknown as DayRecord) : null),
+    [result, curBase, dayDate, coletaResult]
+  );
+  const ultimoSalvo = history.length ? history[history.length - 1] : null;
 
   const openDriverDialog = (nome: string) => {
     if (!result) return;
@@ -485,6 +485,30 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
 
   return (
     <section className="pane active">
+      <div className="pageHead">
+        <h2>Entregas do dia</h2>
+        <Dica>Solte aqui as exportações do JMS: o Monitoramento de bipagem e a Carta de porte (e a Coleta, se a base faz). As colunas são reconhecidas pelo nome. Nada sai do navegador até você salvar o dia.</Dica>
+        <span className="spacer"></span>
+        {result && (
+          <>
+            <input type="date" aria-label="Dia dos dados" value={dayDate} onChange={(e) => setDayDate(e.target.value)} />
+            <Menu rotulo="Compartilhar">
+              <MenuItem onClick={openWhatsDialog}>Resumo para WhatsApp</MenuItem>
+              <MenuItem onClick={openImageDialog}>Imagem do ranking</MenuItem>
+            </Menu>
+            <Menu rotulo="Exportar">
+              <MenuItem onClick={exportCsv}>Resultado por motorista (CSV)</MenuItem>
+              <MenuItem onClick={exportCsvPacotes}>Todos os pacotes (CSV)</MenuItem>
+              <MenuItem onClick={() => exportRomaneio("entrega")}>Romaneio de entrega (PDF)</MenuItem>
+              <MenuItem onClick={() => exportRomaneio("devolucao")}>Romaneio de devolução (PDF)</MenuItem>
+            </Menu>
+            <button className="btn primary" disabled={!canEdit} onClick={() => saveDay()}>Salvar no histórico</button>
+          </>
+        )}
+      </div>
+
+      <details className="cargas" open={!result && !ultimoSalvo}>
+        <summary>Arquivos do dia {sheetBase || sheetEnt || sheetColeta ? `(${[sheetBase, sheetEnt, sheetColeta].filter(Boolean).length} carregado${[sheetBase, sheetEnt, sheetColeta].filter(Boolean).length > 1 ? "s" : ""})` : ""}</summary>
       <div className="loads">
         <DropZone
           label="Saídas por motorista"
@@ -517,12 +541,20 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
           onMapChange={(k, idx) => sheetColeta && setSheetColeta({ ...sheetColeta, map: { ...sheetColeta.map, [k]: idx } })}
         />
       </div>
+      </details>
 
-      {!result && (
+      {!result && !ultimoSalvo && (
         <div className="empty">
-          <h3>Carregue as duas exportações do JMS</h3>
-          <p>As colunas são reconhecidas pelo nome do cabeçalho. Nada sai do seu navegador até você salvar o dia no histórico.</p>
+          <h3>Carregue as exportações do JMS</h3>
+          <p>Os gráficos do dia aparecem assim que os arquivos entrarem.</p>
         </div>
+      )}
+
+      {!result && ultimoSalvo && curBase && (
+        <>
+          <p className="small muted" style={{ margin: "0 0 .6rem" }}>Último dia salvo · {brDate(ultimoSalvo.data)}. Carregue novos arquivos acima para atualizar.</p>
+          <DiaCharts day={ultimoSalvo} base={curBase} drivers={drivers} />
+        </>
       )}
 
       {result && curBase && (
@@ -532,20 +564,9 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
               {result.linhasDescartadas} linha{result.linhasDescartadas > 1 ? "s" : ""} com horário de saída/chegada em formato ilegível — essas datas não entraram no cálculo de SLA (mas o pacote continua contado normalmente).
             </div>
           )}
-          <div className="kpis">
-            <div className="kpi"><b><AnimatedNumber value={result.list.length} format={(v) => fmtN(Math.round(v))} /></b><span>motoristas</span></div>
-            <div className="kpi"><b><AnimatedNumber value={result.tot.t} format={(v) => fmtN(Math.round(v))} /></b><span>pacotes (códigos-mãe)</span></div>
-            <div className="kpi"><b style={{ color: "var(--ok)" }}><AnimatedNumber value={result.tot.e} format={(v) => fmtN(Math.round(v))} /></b><span>entregues, {fmtPct(result.tot.t ? result.tot.e / result.tot.t : 0)}</span></div>
-            <div className="kpi"><b style={{ color: "var(--bad)" }}><AnimatedNumber value={result.tot.p} format={(v) => fmtN(Math.round(v))} /></b><span>com problema</span></div>
-            <div className="kpi"><b><AnimatedNumber value={result.tot.n} format={(v) => fmtN(Math.round(v))} /></b><span>não entregues</span></div>
-            <div className="kpi"><b><AnimatedNumber value={result.tot.retidoBase} format={(v) => fmtN(Math.round(v))} /></b><span>retidos na base (sem saída registrada)</span></div>
-            <div className="kpi"><b>{fmtPct(result.tot.t ? result.tot.devolucao / result.tot.t : 0)}</b><span>taxa de devolução, {fmtN(result.tot.devolucao)} pacotes</span></div>
-            <div className="kpi"><b>{fmtPct(result.tot.e ? result.tot.comAssinatura / result.tot.e : 0)}</b><span>entregas com assinatura (POD)</span></div>
-            <div className="kpi goal">
-              <b>{faltam(result.tot.t, result.tot.e, meta) ? <AnimatedNumber value={faltam(result.tot.t, result.tot.e, meta)} format={(v) => fmtN(Math.round(v))} /> : "Batida"}</b>
-              <span>{faltam(result.tot.t, result.tot.e, meta) ? `entregas para a meta de ${curBase.meta}%` : `meta de ${curBase.meta}%`}</span>
-            </div>
-          </div>
+          {diaAtual && <DiaCharts day={diaAtual} base={curBase} drivers={drivers} />}
+          <details className="cargas" style={{ margin: "1rem 0" }}>
+            <summary>Mais números do dia</summary>
           {coletaResult && (
             <div className="panel" style={{ margin: "0 0 1rem" }}>
               <h3 style={{ margin: "0 0 .5rem" }}>Coleta</h3>
@@ -594,37 +615,8 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
               </div>
             </div>
           )}
-          {bairrosRanked.length > 0 && (
-            <div className="panel" style={{ margin: "0 0 1rem" }}>
-              <h3 style={{ margin: "0 0 .5rem" }}>Bairros com pior desempenho</h3>
-              <p className="muted small" style={{ margin: "0 0 .75rem" }}>% no prazo por bairro/distrito, só bairros com 3+ pacotes no dia. Ajuda a achar onde a operação está falhando geograficamente.</p>
-              <div className="bars">
-                {bairrosRanked.map((b) => (
-                  <div className="b" key={b.bairro}>
-                    <div>
-                      {b.bairro}
-                      <em style={{ width: `${b.pct * 100}%`, background: `var(--${level(b.pct, meta, alerta)})` }}></em>
-                    </div>
-                    <strong>{fmtPct(b.pct)} <span className="muted small">({fmtN(b.e)}/{fmtN(b.total)})</span></strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="toolbar">
-            <label className="inline small">
-              Data <input type="date" value={dayDate} onChange={(e) => setDayDate(e.target.value)} />
-            </label>
-            <button className="btn signal" disabled={!canEdit} onClick={() => saveDay()}>Salvar no histórico</button>
-            <button className="btn" onClick={openWhatsDialog}>Resumo para WhatsApp</button>
-            <button className="btn" onClick={openImageDialog}>Imagem do ranking</button>
-            <button className="btn" onClick={exportCsv}>Exportar CSV</button>
-            <button className="btn" onClick={exportCsvPacotes}>Exportar pacotes (CSV)</button>
-            <button className="btn" onClick={() => exportRomaneio("entrega")}>Romaneio de entrega (PDF)</button>
-            <button className="btn" onClick={() => exportRomaneio("devolucao")}>Romaneio de devolução (PDF)</button>
-            <button className="btn" onClick={() => openScreen("conferencia")}>Conferir pendentes na câmera</button>
-          </div>
-          <div className="split">
+          </details>
+          <div>
             <div>
               <div className="toolbar">
                 <input type="search" placeholder="Buscar motorista" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -686,24 +678,6 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
                 </AnimatePresence>
               </div>
             </div>
-            <aside className="panel">
-              <h3>Problemas por motivo</h3>
-              <div className="bars">
-                {motivosList.length ? (
-                  motivosList.slice(0, 10).map(([m, c]) => (
-                    <div className="b" key={m}>
-                      <div>
-                        {m}
-                        <em style={{ width: `${(c / maxMotivo) * 100}%` }}></em>
-                      </div>
-                      <strong>{fmtN(c)}</strong>
-                    </div>
-                  ))
-                ) : (
-                  <p className="muted small">Nenhum pacote com problema.</p>
-                )}
-              </div>
-            </aside>
           </div>
         </div>
       )}

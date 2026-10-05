@@ -352,9 +352,9 @@ export type ScreenId = (typeof SCREEN_IDS)[number];
 export const SCREENS: Record<ScreenId, { label: string; cat: string }> = {
   painel: { label: "Painel da base", cat: "indicadores" },
   geral: { label: "Visão geral das bases", cat: "indicadores" },
-  saude: { label: "Saúde e sugestões da base", cat: "indicadores" },
-  ajustes: { label: "Dados da base", cat: "infos" },
-  entregas: { label: "Monitoramento de bipagem de entrega", cat: "operacao" },
+  saude: { label: "Saúde e sugestões", cat: "indicadores" },
+  ajustes: { label: "Dados e metas da base", cat: "gestaobases" },
+  entregas: { label: "Entregas do dia", cat: "operacao" },
   conferencia: { label: "Conferência de carga", cat: "operacao" },
   qrconf: { label: "Conferência QR", cat: "operacao" },
   bases: { label: "Minhas bases", cat: "gestaobases" },
@@ -364,15 +364,15 @@ export const SCREENS: Record<ScreenId, { label: string; cat: string }> = {
   plano: { label: "Plano de ação", cat: "indicadores" },
   planos: { label: "Planos e cobrança", cat: "gestaobases" },
   rastreador: { label: "Rastreador (beta)", cat: "transporte" },
-  clientes: { label: "Ocorrências", cat: "clientes" },
-  parados: { label: "Pacotes parados (aging)", cat: "clientes" },
-  pendencias: { label: "Pendências de hoje", cat: "clientes" },
-  fechamento: { label: "Fechamento de pagamento", cat: "financeiro" },
-  precos: { label: "Tabela de preços", cat: "financeiro" },
+  clientes: { label: "Ocorrências", cat: "operacao" },
+  parados: { label: "Pacotes parados", cat: "operacao" },
+  pendencias: { label: "Pendências", cat: "operacao" },
+  fechamento: { label: "Fechamento de pagamento", cat: "transporte" },
+  precos: { label: "Tabela de preços", cat: "transporte" },
   motoristas: { label: "Motoristas e veículos", cat: "transporte" },
-  alertas: { label: "Alertas operacionais", cat: "qualidade" },
+  alertas: { label: "Alertas operacionais", cat: "operacao" },
   historico: { label: "Histórico e ranking", cat: "indicadores" },
-  cabine: { label: "Exportar dados", cat: "cabine" },
+  cabine: { label: "Exportar dados", cat: "integracoes" },
   integracoes: { label: "Serviços integrados", cat: "integracoes" },
   cep: { label: "Consulta CEP", cat: "integracoes" },
 };
@@ -385,16 +385,11 @@ export interface Cat {
 }
 
 export const CATS: Cat[] = [
-  { id: "infos", icon: "🧾", label: "Infos Básicas", desc: "Nome, cidade e meta de entrega da base" },
-  { id: "operacao", icon: "📦", label: "Operação", desc: "Importa as planilhas do JMS e monta o painel do dia" },
-  { id: "gestaobases", icon: "🏬", label: "Gestão de Bases", desc: "Bases cadastradas — criar e trocar entre elas" },
-  { id: "clientes", icon: "👥", label: "Clientes", desc: "Pacotes com problema e o que já foi tratado" },
-  { id: "financeiro", icon: "💰", label: "Financeiro", desc: "Fechamento de pagamento por motorista" },
-  { id: "transporte", icon: "🛵", label: "Transporte", desc: "Motoristas, placas e veículos cadastrados" },
-  { id: "qualidade", icon: "🛡️", label: "Qualidade de Serviço", desc: "Motoristas abaixo do alerta de SLA hoje" },
-  { id: "indicadores", icon: "📈", label: "Indicadores de Negócio", desc: "Evolução dos dias salvos e ranking de motoristas" },
-  { id: "cabine", icon: "🗄️", label: "Cabine de Dados", desc: "Exportação dos dados brutos em CSV" },
-  { id: "integracoes", icon: "🔗", label: "Serviços Integrados", desc: "Endereço do webhook e payload de exemplo" },
+  { id: "indicadores", icon: "📈", label: "Painel e análise", desc: "Gráficos, saúde da base e plano de ação" },
+  { id: "operacao", icon: "📦", label: "Dia a dia", desc: "Entregas, conferência, pacotes parados e pendências" },
+  { id: "transporte", icon: "🛵", label: "Motoristas e pagamento", desc: "Resultado por motorista, fechamento e preços" },
+  { id: "gestaobases", icon: "🏬", label: "Bases e equipe", desc: "Bases, pessoas, metas e planos" },
+  { id: "integracoes", icon: "🔗", label: "Dados e serviços", desc: "Exportar, WhatsApp e consulta de CEP" },
 ];
 
 export const childrenOf = (catId: string): ScreenId[] =>
