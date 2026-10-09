@@ -97,3 +97,17 @@
 .viz-heat td.h-bad{background:color-mix(in srgb,var(--bad) 38%,transparent)}
 .viz-legend-heat{display:flex;gap:1rem;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:.5rem}
 .viz-legend-heat i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:.35rem;vertical-align:-2px}
+
+/* funil */
+.viz-funil{display:flex;flex-direction:column;gap:.55rem}
+.viz-funil-linha{display:grid;grid-template-columns:minmax(7rem,11rem) 1fr minmax(6.5rem,auto);gap:.7rem;align-items:center;outline-offset:3px;border-radius:6px}
+.viz-funil-nome{font-size:.84rem;color:var(--ink)}
+.viz-funil-trilho{height:1.6rem;background:color-mix(in srgb,var(--ink) 5%,transparent);border-radius:4px;overflow:hidden}
+.viz-funil-barra{height:100%;background:var(--v1);border-radius:4px;transition:width .4s}
+.viz-funil-barra.fim{background:color-mix(in srgb,var(--ink) 55%,transparent)}
+.viz-funil-num{display:flex;flex-direction:column;align-items:flex-end;font-variant-numeric:tabular-nums;font-size:.8rem}
+.viz-funil-num span{color:var(--muted);font-size:.72rem}
+.viz-funil-perdas{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.9rem}
+.viz-funil-perdas span{font-size:.76rem;padding:.2rem .55rem;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-radius:999px;color:var(--muted)}
+.viz-funil-perdas b{color:var(--ink);font-weight:600}
+@media (max-width:560px){.viz-funil-linha{grid-template-columns:1fr auto}.viz-funil-trilho{grid-column:1 / -1;grid-row:2}}
