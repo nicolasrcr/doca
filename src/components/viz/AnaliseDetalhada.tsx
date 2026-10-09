@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { brDate, fmtN, fmtPct } from "../../lib/format";
 import { LIMITES } from "../../lib/insights";
 import type { Base, DayRecord } from "../../lib/types";
-import { ChartCard, ColumnChart, DataTable, Dispersao, Heatmap, TipRow, TipTitle, type ColDatum, type DispDatum, type HeatRow } from "./Viz";
+import { ChartCard, ColumnChart, DataTable, Dispersao, Funil, Heatmap, TipRow, TipTitle, type ColDatum, type DispDatum, type FunilEtapa, type HeatRow } from "./Viz";
 
 const curto = (iso: string) => iso.slice(8) + "/" + iso.slice(5, 7);
 
@@ -72,8 +72,46 @@ export default function AnaliseDetalhada({ days, base }: { days: DayRecord[]; ba
     return { cols: ultimos.map((d) => curto(d.data)), rows };
   }, [days]);
 
+  // 4) funil do período: do que chegou até o que foi entregue no prazo
+  const funil = useMemo(() => {
+    const ok = days.filter((d) => d.carta_ok !== false);
+    const soma = (f: (d: DayRecord) => number) => ok.reduce((a, d) => a + f(d), 0);
+    const total = soma((d) => d.total), entregues = soma((d) => d.entregues);
+    const retido = soma((d) => d.retido_base || 0), devolucao = soma((d) => d.devolucao || 0);
+    const problemas = soma((d) => d.problemas), pendentes = soma((d) => d.pendentes);
+    const slaTotal = soma((d) => d.sla_total || 0), slaOk = soma((d) => d.sla_ok || 0);
+    const saiu = Math.max(0, total - retido);
+    const pct = (a: number, b: number) => (b > 0 ? fmtPct(a / b) : "—");
+    const etapas: FunilEtapa[] = [
+      { label: "Chegaram à base", value: total, tip: <><TipTitle>Chegaram à base</TipTitle><TipRow label="Pacotes" value={fmtN(total)} /></> },
+      { label: "Saíram para entrega", value: saiu, perda: retido > 0 ? `${fmtN(retido)} retidos` : undefined, tip: <><TipTitle>Saíram para entrega</TipTitle><TipRow label="Pacotes" value={fmtN(saiu)} /><TipRow label="Ficaram retidos na base" value={fmtN(retido)} /></> },
+      { label: "Entregues", value: entregues, perda: total - entregues > 0 ? `${fmtN(Math.max(0, saiu - entregues))} não chegaram` : undefined, tip: <><TipTitle>Entregues</TipTitle><TipRow label="Pacotes" value={fmtN(entregues)} /><TipRow label="Dos que saíram" value={pct(entregues, saiu)} /></> },
+    ];
+    if (slaTotal > 0) {
+      const noPrazo = Math.min(entregues, Math.round(entregues * (slaOk / slaTotal)));
+      etapas.push({ label: "Entregues em até 24h", value: noPrazo, perda: `${fmtN(Math.max(0, entregues - noPrazo))} depois`, tip: <><TipTitle>Entregues em até 24h</TipTitle><TipRow label="Pacotes" value={fmtN(noPrazo)} /><TipRow label="Dos entregues" value={pct(slaOk, slaTotal)} /></> });
+    }
+    return { etapas, problemas, pendentes, retido, devolucao, total, excluidos: days.length - ok.length };
+  }, [days]);
+
   return (
     <div className="viz-grid">
+      <div className="viz-span-12" style={{ gridColumn: "1 / -1" }}>
+        <ChartCard title="Do pacote que chegou ao entregue" caption={funil.excluidos > 0 ? `${funil.excluidos} dia(s) sem a Carta de porte ficaram de fora` : "Soma dos dias do período"}
+          table={<DataTable cols={["Etapa", "Pacotes", "% de quem chegou"]} rows={funil.etapas.map((e) => [e.label, fmtN(e.value), funil.total ? fmtPct(e.value / funil.total) : "—"])} />}>
+          {funil.total > 0 ? (
+            <>
+              <Funil name="Funil da operação: chegada, saída, entrega e prazo" etapas={funil.etapas} />
+              <div className="viz-funil-perdas">
+                <span><b>{fmtN(funil.pendentes)}</b> pendentes</span>
+                <span><b>{fmtN(funil.problemas)}</b> com problema</span>
+                <span><b>{fmtN(funil.retido)}</b> retidos na base</span>
+                <span><b>{fmtN(funil.devolucao)}</b> em devolução</span>
+              </div>
+            </>
+          ) : <p className="muted">Sem pacotes no período.</p>}
+        </ChartCard>
+      </div>
       <div className="viz-span-12" style={{ gridColumn: "1 / -1" }}>
         <ChartCard title="A que horas as entregas acontecem" caption={horas.diasComHoras && pico ? `Pico às ${pico[0]}h · ${fmtPct(totalHoras ? apos / totalHoras : 0)} depois das ${noturno}h` : undefined}
           legend={<><span><i style={{ background: "var(--v1)" }} />Dentro do horário</span><span><i style={{ background: "var(--v2)" }} />Depois das {noturno}h</span></>}

@@ -487,3 +487,24 @@ export function Heatmap({ cols, rows, meta, alerta, name }: { cols: string[]; ro
     </div>
   );
 }
+
+/* ───────── funil ───────── */
+export interface FunilEtapa { label: string; value: number; tip: ReactNode; perda?: string }
+
+export function Funil({ etapas, name }: { etapas: FunilEtapa[]; name: string }) {
+  const tip = useTip();
+  const topo = Math.max(1, etapas[0]?.value || 1);
+  return (
+    <div className="viz-funil" role="list" aria-label={name}>
+      {etapas.map((e, i) => (
+        <div className="viz-funil-linha" role="listitem" key={e.label} tabIndex={0}
+          onPointerMove={(ev) => tip.show(ev.clientX, ev.clientY, e.tip)} onPointerLeave={() => tip.hide()}
+          onFocus={(ev) => { const rc = (ev.currentTarget as HTMLElement).getBoundingClientRect(); tip.show(rc.left + 10, rc.top, e.tip); }} onBlur={() => tip.hide()}>
+          <div className="viz-funil-nome">{e.label}</div>
+          <div className="viz-funil-trilho"><div className={"viz-funil-barra" + (i === etapas.length - 1 ? " fim" : "")} style={{ width: Math.max(3, (e.value / topo) * 100) + "%" }} /></div>
+          <div className="viz-funil-num"><b>{e.value.toLocaleString("pt-BR")}</b><span>{Math.round((e.value / topo) * 100)}%{e.perda ? ` · ${e.perda}` : ""}</span></div>
+        </div>
+      ))}
+    </div>
+  );
+}
