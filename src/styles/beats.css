@@ -43,6 +43,14 @@ h2{font-size:1.75rem;line-height:1.15}
 /* campos em pílula, borda escura */
 input:not([type=checkbox]):not([type=radio]):not([type=file]),select{border-radius:var(--pill);height:44px;padding:0 1rem}
 textarea{border-radius:var(--r)}
+/* todo campo legível nos dois temas: fundo e texto saem das variáveis, nunca do padrão do navegador */
+input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]),select,textarea{background:var(--surface);color:var(--ink);border:1.5px solid var(--ink);caret-color:var(--ink)}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
+select option{background:var(--surface);color:var(--ink)}
+input:-webkit-autofill{-webkit-text-fill-color:var(--ink);box-shadow:0 0 0 100px var(--surface) inset}
+:root{color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark}}
+:root[data-theme="dark"]{color-scheme:dark}
 .toolbar input,.toolbar select,table.drv input,.form input,.form select,.form textarea{border:1.5px solid var(--ink);background:var(--surface);color:var(--ink)}
 
 /* superfícies sem borda dura nem sombra */

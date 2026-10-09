@@ -88,7 +88,7 @@
 .lp-tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .lp-form{display:grid;gap:.8rem}
 .lp-form label{display:grid;gap:.3rem;font-size:.85rem;font-weight:500;color:var(--ink)}
-.lp-form input,.lp-form select,.lp-form textarea{width:100%;padding:.75rem .85rem;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:inherit}
+.lp-form input,.lp-form select,.lp-form textarea{width:100%;padding:.75rem .85rem;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit}
 .lp-form textarea{min-height:84px;resize:vertical}
 .lp-form input:focus,.lp-form select:focus,.lp-form textarea:focus{outline:2px solid var(--acc);outline-offset:0;border-color:var(--acc)}
 .lp-hint{font-size:.82rem;color:var(--muted);margin:.4rem 0 0}
@@ -171,9 +171,9 @@
 .lp-tabs{background:#f1f1f1;border-radius:9999px}
 .lp-tabs button{border-radius:9999px;font-family:var(--font-cta);text-transform:uppercase;letter-spacing:.04em;font-weight:500}
 .lp-tabs button.on{background:#161616;color:#fff;box-shadow:none}
-.lp-form input,.lp-form select{border:1.5px solid #161616;border-radius:9999px;height:44px;padding:0 1rem}
+.lp-form input,.lp-form select{border:1.5px solid var(--ink);border-radius:9999px;height:44px;padding:0 1rem}
 .lp-form textarea{border:1.5px solid #161616;border-radius:16px}
-.lp-form input:focus,.lp-form select:focus,.lp-form textarea:focus{outline:3px solid #006cff;border-color:#161616}
+.lp-form input:focus,.lp-form select:focus,.lp-form textarea:focus{outline:3px solid #006cff;border-color:var(--ink)}
 .lp-hint a{color:#161616;text-decoration:underline}
 .lp-modal-box{border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.12)}
 .lp-x{border:1.5px solid #161616;background:#fff;color:#161616;width:36px;height:36px}
