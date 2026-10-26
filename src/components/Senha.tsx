@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import DocaLogo from "./DocaLogo";
+import SenhaInput from "./SenhaInput";
 
 // Formulário de senha nova (usado ao entrar por convite/recuperação e em "Trocar senha").
 export function SenhaForm({ onDone, rotulo = "Salvar senha" }: { onDone: () => void; rotulo?: string }) {
@@ -28,10 +29,10 @@ export function SenhaForm({ onDone, rotulo = "Salvar senha" }: { onDone: () => v
   return (
     <form onSubmit={enviar} style={{ display: "grid", gap: ".6rem" }}>
       <label>Nova senha
-        <input type="password" autoComplete="new-password" value={a} onChange={(e) => setA(e.target.value)} minLength={8} required />
+        <SenhaInput autoComplete="new-password" value={a} onChange={(e) => setA(e.target.value)} minLength={8} required />
       </label>
       <label>Repita a nova senha
-        <input type="password" autoComplete="new-password" value={b} onChange={(e) => setB(e.target.value)} minLength={8} required />
+        <SenhaInput autoComplete="new-password" value={b} onChange={(e) => setB(e.target.value)} minLength={8} required />
       </label>
       {erro && <div className="warnbox" role="alert">{erro}</div>}
       <button className="btn primary" type="submit" disabled={busy}>{busy ? "Salvando…" : rotulo}</button>
