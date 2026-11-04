@@ -86,3 +86,18 @@ main{padding:2rem 2.25rem}
 .btn.signal{background:var(--ink);color:var(--bg);border-color:transparent}
 .navchild.on{color:var(--bg)}
 .track{background:var(--pend)}
+
+/* fechamento: diálogo largo, tabela completa sem corte */
+dialog:has(table.payout){max-width:min(1120px,96vw)}
+dialog:has(table.payout) .dlg-b{max-height:70vh}
+table.payout{min-width:860px}
+table.payout th,table.payout td{white-space:nowrap;vertical-align:middle;padding:.6rem .6rem}
+table.payout td:first-child{white-space:normal;min-width:170px;max-width:240px}
+table.payout td .btn.small{min-width:84px;height:36px;padding:0 .8rem;white-space:nowrap}
+table.payout input:not([type=checkbox]){height:36px;border-radius:10px;border:1px solid var(--line);padding:0 .6rem;width:110px;text-align:right}
+table.payout input:not([type=number]){width:100%;min-width:180px}
+table.payout input[type=number]{-moz-appearance:textfield;appearance:textfield}
+table.payout input[type=number]::-webkit-inner-spin-button,table.payout input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+table.payout tfoot td{border-top:1.5px solid var(--ink);border-bottom:0}
+table.payout thead th{position:sticky;top:0;background:var(--surface);z-index:1}
+dialog:has(table.payout) .dlg-f .btn{height:42px;padding:0 1.1rem}
