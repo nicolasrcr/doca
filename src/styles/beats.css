@@ -101,3 +101,13 @@ table.payout input[type=number]::-webkit-inner-spin-button,table.payout input[ty
 table.payout tfoot td{border-top:1.5px solid var(--ink);border-bottom:0}
 table.payout thead th{position:sticky;top:0;background:var(--surface);z-index:1}
 dialog:has(table.payout) .dlg-f .btn{height:42px;padding:0 1.1rem}
+
+/* descontos e bônus avulsos */
+.adjForm{display:grid;grid-template-columns:minmax(180px,1.2fr) 150px minmax(180px,1.6fr) 170px auto;gap:.6rem;align-items:center}
+.adjForm input,.adjForm select{height:40px;width:100%;min-width:0;border-radius:10px;border:1px solid var(--line);padding:0 .75rem}
+.adjForm .btn{height:40px}
+@media (max-width:860px){.adjForm{grid-template-columns:1fr 1fr}.adjForm .btn{grid-column:1/-1}}
+table.adjTable th,table.adjTable td{white-space:nowrap;vertical-align:middle;padding:.6rem}
+table.adjTable td:nth-child(3){white-space:normal;min-width:180px}
+table.adjTable .r{text-align:right;font-variant-numeric:tabular-nums}
+table.adjTable .btn.small{height:34px;padding:0 .8rem}
