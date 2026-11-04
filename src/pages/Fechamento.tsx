@@ -129,33 +129,58 @@ export default function Fechamento() {
   const [end, setEnd] = useState(todayISO());
 
   const openBreakdown = (p: Payout, it: PayoutItem) => {
+    const rows = it.breakdown || [];
+    const discTotal = (it.discounts || []).reduce((a, d) => a + d.valor, 0);
+    const origemLabel = { dia_especial: "dia especial", bairro: "bairro", motorista: "motorista", sem_valor: "pendência" };
     dialog.open(
       `Detalhamento — ${it.driver}`,
       <div>
+        <div className="bdSummary">
+          <div><span>Entregas</span><b>{fmtN(it.deliveries)}</b></div>
+          <div><span>Bruto</span><b>{fmtR(it.gross)}</b></div>
+          <div><span>Descontos/bônus</span><b style={{ color: discTotal < 0 ? "var(--bad)" : discTotal > 0 ? "var(--ok)" : undefined }}>{fmtR(discTotal)}</b></div>
+          <div><span>Ajuste</span><b>{fmtR(it.adjustments)}</b></div>
+          <div><span>Líquido</span><b>{fmtR(it.net)}</b></div>
+        </div>
         <div className="tablewrap">
-          <table className="drv">
-            <thead><tr><th>Bairro</th><th>Data</th><th>Entregas</th><th>R$/ent.</th><th>Origem</th><th>Subtotal</th></tr></thead>
+          <table className="drv bdTable">
+            <thead><tr><th>Bairro</th><th>Data</th><th className="r">Entregas</th><th className="r">R$/ent.</th><th>Origem</th><th className="r">Subtotal</th></tr></thead>
             <tbody>
-              {(it.breakdown || []).map((r, i) => (
+              {rows.map((r, i) => (
                 <tr key={i}>
-                  <td>{r.bairro}</td>
+                  <td style={{ whiteSpace: "normal" }}>{r.bairro}</td>
                   <td>{brDate(r.data)}</td>
-                  <td>{fmtN(r.entregas)}</td>
-                  <td>{r.origem === "sem_valor" ? <span className="muted">sem valor</span> : fmtR(r.valorUnit)}</td>
-                  <td className="muted small">{{ dia_especial: "dia especial", bairro: "bairro", motorista: "motorista", sem_valor: "pendência" }[r.origem]}</td>
-                  <td>{fmtR(r.subtotal)}</td>
+                  <td className="r">{fmtN(r.entregas)}</td>
+                  <td className="r">{r.origem === "sem_valor" ? <span className="muted">sem valor</span> : fmtR(r.valorUnit)}</td>
+                  <td><span className={"stat " + (r.origem === "sem_valor" ? "rascunho" : "")}>{origemLabel[r.origem]}</span></td>
+                  <td className="r"><b>{fmtR(r.subtotal)}</b></td>
                 </tr>
               ))}
-              {!(it.breakdown || []).length && <tr><td colSpan={6} className="muted small">Sem detalhamento (fechamento anterior à tabela de preços por bairro).</td></tr>}
+              {!rows.length && <tr><td colSpan={6} className="muted small">Sem detalhamento (fechamento anterior à tabela de preços por bairro).</td></tr>}
             </tbody>
+            {!!rows.length && (
+              <tfoot><tr>
+                <td colSpan={2}><b>Total</b></td>
+                <td className="r"><b>{fmtN(rows.reduce((a, r) => a + r.entregas, 0))}</b></td>
+                <td></td><td></td>
+                <td className="r"><b>{fmtR(rows.reduce((a, r) => a + r.subtotal, 0))}</b></td>
+              </tr></tfoot>
+            )}
           </table>
         </div>
-        <div className="row" style={{ marginTop: ".75rem" }}>
-          <button className="btn small" onClick={() => copyText(whatsappText(p, it), toast)}>📋 Copiar resumo WhatsApp</button>
-          <button className="btn small" onClick={() => exportReceiptPdf(p, it, curBase?.name || "")}>Recibo em PDF</button>
-        </div>
+        {!!(it.discounts || []).length && (
+          <div className="bdDisc">
+            {(it.discounts || []).map((d, i) => (
+              <div key={i}><span>{d.valor < 0 ? "Desconto" : "Bônus"}: {d.motivo}</span><b style={{ color: d.valor < 0 ? "var(--bad)" : "var(--ok)" }}>{fmtR(d.valor)}</b></div>
+            ))}
+          </div>
+        )}
       </div>,
-      []
+      [
+        { label: "Copiar resumo WhatsApp", onClick: () => copyText(whatsappText(p, it), toast) },
+        { label: "Recibo em PDF", onClick: () => exportReceiptPdf(p, it, curBase?.name || "") },
+        { label: "Voltar ao fechamento", cls: "primary", onClick: () => openPayout(p) },
+      ]
     );
   };
 

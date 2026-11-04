@@ -117,3 +117,15 @@ table.adjTable .btn.small{height:34px;padding:0 .8rem}
 .discForm input,.discForm select{height:40px;width:100%;min-width:0;border-radius:10px;border:1px solid var(--line);padding:0 .75rem}
 .discForm .btn{height:40px}
 @media (max-width:640px){.discForm{grid-template-columns:1fr 1fr}.discForm input:nth-of-type(1){grid-column:1/-1}.discForm .btn{grid-column:1/-1}}
+
+/* detalhamento do motorista */
+dialog:has(table.bdTable){max-width:min(860px,96vw)}
+.bdSummary{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.6rem;margin-bottom:1rem}
+.bdSummary>div{background:var(--bg);border-radius:var(--r-sm);padding:.6rem .8rem;display:flex;flex-direction:column;gap:.15rem}
+.bdSummary span{font-size:.74rem;color:var(--muted)}
+.bdSummary b{font-size:1.02rem;font-variant-numeric:tabular-nums}
+table.bdTable th,table.bdTable td{white-space:nowrap;vertical-align:middle;padding:.6rem}
+table.bdTable .r{text-align:right;font-variant-numeric:tabular-nums}
+table.bdTable tfoot td{border-top:1.5px solid var(--ink);border-bottom:0}
+.bdDisc{margin-top:1rem;display:flex;flex-direction:column;gap:.35rem;font-size:.88rem}
+.bdDisc>div{display:flex;justify-content:space-between;gap:1rem;padding:.4rem .6rem;border-radius:var(--r-sm);background:var(--bg)}
