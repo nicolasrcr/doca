@@ -3,7 +3,7 @@ import { useDoca } from "../hooks/DocaContext";
 import { useDialog } from "../hooks/useDialog";
 import { downloadBlob, copyText, useToast } from "../hooks/useToast";
 import { brDate, fmtN, fmtR, todayISO } from "../lib/format";
-import type { Payout, PayoutItem } from "../lib/types";
+import type { Payout, PayoutDiscount, PayoutItem } from "../lib/types";
 import { Dica } from "../components/ui";
 
 function exportPayoutCsv(p: Payout) {
@@ -75,6 +75,50 @@ function whatsappText(p: Payout, it: PayoutItem): string {
   if (it.pendente) lines.push("⚠️ há entregas sem valor definido — confira com o financeiro.");
   lines.push("", `*Líquido: ${fmtR(it.net)}*`);
   return lines.join("\n");
+}
+
+function DiscountForm({ initial, onChange }: { initial: PayoutDiscount[]; onChange: (list: PayoutDiscount[]) => void }) {
+  const [list, setList] = useState<PayoutDiscount[]>(initial);
+  const [motivo, setMotivo] = useState("");
+  const [valor, setValor] = useState("");
+  const [tipo, setTipo] = useState<"desconto" | "bonus">("desconto");
+  const commit = (next: PayoutDiscount[]) => { setList(next); onChange(next); };
+  const add = () => {
+    const v = Math.abs(parseFloat(valor.replace(",", ".")));
+    if (!motivo.trim() || !v) return;
+    commit([...list, { motivo: motivo.trim(), valor: tipo === "desconto" ? -v : v }]);
+    setMotivo(""); setValor("");
+  };
+  const total = list.reduce((a, d) => a + d.valor, 0);
+  return (
+    <div>
+      <div className="tablewrap">
+        <table className="drv adjTable">
+          <thead><tr><th>Motivo</th><th className="r">Valor</th><th></th></tr></thead>
+          <tbody>
+            {list.map((d, i) => (
+              <tr key={i}>
+                <td style={{ whiteSpace: "normal" }}>{d.motivo}</td>
+                <td className="r" style={{ color: d.valor < 0 ? "var(--bad)" : "var(--ok)", fontWeight: 600 }}>{fmtR(d.valor)}</td>
+                <td><button className="btn small" onClick={() => commit(list.filter((_, j) => j !== i))}>Remover</button></td>
+              </tr>
+            ))}
+            {!list.length && <tr><td colSpan={3} className="muted small">Nenhum item lançado.</td></tr>}
+          </tbody>
+          {!!list.length && <tfoot><tr><td><b>Total</b></td><td className="r"><b>{fmtR(total)}</b></td><td></td></tr></tfoot>}
+        </table>
+      </div>
+      <form className="discForm" onSubmit={(e) => { e.preventDefault(); add(); }}>
+        <select value={tipo} onChange={(e) => setTipo(e.target.value as "desconto" | "bonus")} aria-label="Tipo">
+          <option value="desconto">Desconto (−)</option>
+          <option value="bonus">Bônus (+)</option>
+        </select>
+        <input placeholder="Motivo (ex.: avaria, bônus meta)" value={motivo} onChange={(e) => setMotivo(e.target.value)} aria-label="Motivo" />
+        <input type="number" step={0.01} min={0} placeholder="Valor (R$)" value={valor} onChange={(e) => setValor(e.target.value)} aria-label="Valor" />
+        <button type="submit" className="btn primary">Adicionar</button>
+      </form>
+    </div>
+  );
 }
 
 export default function Fechamento() {
@@ -155,12 +199,19 @@ export default function Fechamento() {
                       disabled={!editable}
                       title="Ver/editar descontos e bônus itemizados"
                       onClick={() => {
-                        const motivo = prompt("Motivo do desconto/bônus (deixe em branco para cancelar):");
-                        if (!motivo) return;
-                        const valorStr = prompt("Valor (negativo = desconto, positivo = bônus):", "0");
-                        const valor = parseFloat(valorStr || "0");
-                        if (!valor) return;
-                        updatePayoutDiscounts(p.id, i, [...(it.discounts || []), { motivo, valor }]);
+                        let cur = p;
+                        dialog.open(
+                          `Descontos e bônus — ${it.driver}`,
+                          <DiscountForm
+                            initial={it.discounts || []}
+                            onChange={(list) => {
+                              updatePayoutDiscounts(p.id, i, list);
+                              const t = list.reduce((a, d) => a + d.valor, 0);
+                              cur = { ...cur, items: cur.items.map((x, j) => (j === i ? { ...x, discounts: list, net: +(x.gross + x.adjustments + t).toFixed(2) } : x)) };
+                            }}
+                          />,
+                          [{ label: "Voltar ao fechamento", cls: "primary", onClick: () => openPayout(cur) }]
+                        );
                       }}
                     >
                       {discTotal ? fmtR(discTotal) : "+ item"}
