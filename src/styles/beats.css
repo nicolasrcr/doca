@@ -111,3 +111,9 @@ table.adjTable th,table.adjTable td{white-space:nowrap;vertical-align:middle;pad
 table.adjTable td:nth-child(3){white-space:normal;min-width:180px}
 table.adjTable .r{text-align:right;font-variant-numeric:tabular-nums}
 table.adjTable .btn.small{height:34px;padding:0 .8rem}
+
+/* formulário de descontos/bônus do fechamento */
+.discForm{display:grid;grid-template-columns:150px minmax(160px,1fr) 130px auto;gap:.6rem;align-items:center;margin-top:1rem}
+.discForm input,.discForm select{height:40px;width:100%;min-width:0;border-radius:10px;border:1px solid var(--line);padding:0 .75rem}
+.discForm .btn{height:40px}
+@media (max-width:640px){.discForm{grid-template-columns:1fr 1fr}.discForm input:nth-of-type(1){grid-column:1/-1}.discForm .btn{grid-column:1/-1}}
