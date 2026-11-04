@@ -157,7 +157,7 @@ export default function Precos() {
           <Dica>Lançamentos aqui entram automaticamente como item itemizado no próximo fechamento gerado para o motorista, dentro do período da data informada.</Dica>
         </div>
         {canEdit && (
-          <div className="toolbar">
+          <div className="toolbar adjForm">
             <select value={adjDriver} onChange={(e) => setAdjDriver(e.target.value)}>
               <option value="">Selecione o motorista</option>
               {drivers.map((d) => (<option key={d.id} value={d.id}>{d.name}</option>))}
@@ -166,7 +166,7 @@ export default function Precos() {
             <input placeholder="Motivo (ex.: avaria, bônus meta)" value={adjMotivo} onChange={(e) => setAdjMotivo(e.target.value)} />
             <input
               type="number" step={0.01} placeholder="Valor (negativo=desconto)"
-              value={adjValor} onChange={(e) => setAdjValor(e.target.value)} style={{ width: 150 }}
+              value={adjValor} onChange={(e) => setAdjValor(e.target.value)}
             />
             <button
               className="btn primary"
@@ -183,16 +183,16 @@ export default function Precos() {
           </div>
         )}
         <div className="tablewrap">
-          <table className="drv">
-            <thead><tr><th>Motorista</th><th>Data</th><th>Motivo</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+          <table className="drv adjTable">
+            <thead><tr><th>Motorista</th><th>Data</th><th>Motivo</th><th className="r">Valor</th><th>Status</th><th></th></tr></thead>
             <tbody>
               {adjustments.map((a) => (
                 <tr key={a.id}>
                   <td>{nameOf(a.driver_id)}</td>
                   <td>{a.data.split("-").reverse().join("/")}</td>
                   <td>{a.motivo}</td>
-                  <td style={{ color: a.valor < 0 ? "var(--bad)" : "var(--ok)" }}>{fmtR(a.valor)}</td>
-                  <td>{a.applied_payout_id ? "aplicado" : "pendente"}</td>
+                  <td className="r" style={{ color: a.valor < 0 ? "var(--bad)" : "var(--ok)", fontWeight: 600 }}>{fmtR(a.valor)}</td>
+                  <td><span className={"stat " + (a.applied_payout_id ? "fechado" : "rascunho")}>{a.applied_payout_id ? "aplicado" : "pendente"}</span></td>
                   <td>{canEdit && !a.applied_payout_id && <button className="btn small" onClick={() => deleteAdjustment(a.id)}>Excluir</button>}</td>
                 </tr>
               ))}
