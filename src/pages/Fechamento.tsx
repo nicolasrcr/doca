@@ -35,22 +35,74 @@ async function exportPayoutPdf(p: Payout, baseName: string) {
 async function exportReceiptPdf(p: Payout, it: PayoutItem, baseName: string) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF();
-  doc.setFontSize(14); doc.text(`Recibo de entregas — ${baseName}`, 14, 16);
-  doc.setFontSize(10); doc.text(`${it.driver}  |  ${brDate(p.period_start)} a ${brDate(p.period_end)}`, 14, 23);
-  let y = 34; doc.setFontSize(9);
-  doc.text("Bairro", 14, y); doc.text("Data", 90, y); doc.text("Entregas", 130, y, { align: "right" }); doc.text("R$/ent.", 155, y, { align: "right" }); doc.text("Subtotal", 190, y, { align: "right" });
-  y += 4; doc.line(14, y, 196, y); y += 5;
-  (it.breakdown || []).forEach((r) => {
-    if (y > 280) { doc.addPage(); y = 16; }
-    doc.text(r.bairro.slice(0, 34), 14, y); doc.text(brDate(r.data), 90, y);
-    doc.text(fmtN(r.entregas), 130, y, { align: "right" }); doc.text(fmtR(r.valorUnit), 155, y, { align: "right" });
-    doc.text(fmtR(r.subtotal), 190, y, { align: "right" }); y += 6;
+  const L = 14, R = 196, W = R - L;
+  const rows = it.breakdown || [];
+  const cols = { bairro: L + 2, data: 96, ent: 130, unit: 158, sub: R - 2 };
+
+  // cabeçalho
+  doc.setFillColor(20, 21, 26); doc.rect(0, 0, 210, 30, "F");
+  doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+  doc.text("Recibo de entregas", L, 14);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+  doc.text(baseName || "", L, 22);
+  doc.text(`Emitido em ${brDate(todayISO())}`, R, 22, { align: "right" });
+  doc.setTextColor(20);
+
+  // identificação
+  let y = 42;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.text(String(it.driver), L, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(100);
+  y += 6; doc.text(`Período: ${brDate(p.period_start)} a ${brDate(p.period_end)}`, L, y);
+  doc.text(`${fmtN(it.deliveries)} entregas`, R, y, { align: "right" });
+  doc.setTextColor(20);
+
+  const head = (yy: number) => {
+    doc.setFillColor(238, 239, 242); doc.rect(L, yy - 5, W, 8, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+    doc.text("Bairro", cols.bairro, yy); doc.text("Data", cols.data, yy);
+    doc.text("Entregas", cols.ent, yy, { align: "right" }); doc.text("R$/ent.", cols.unit, yy, { align: "right" }); doc.text("Subtotal", cols.sub, yy, { align: "right" });
+    doc.setFont("helvetica", "normal");
+  };
+
+  y += 12; head(y); y += 8;
+  rows.forEach((r, i) => {
+    if (y > 270) { doc.addPage(); y = 20; head(y); y += 8; }
+    if (i % 2) { doc.setFillColor(248, 248, 250); doc.rect(L, y - 4.5, W, 6.5, "F"); }
+    doc.setFontSize(9);
+    doc.text(r.bairro.slice(0, 38), cols.bairro, y); doc.text(brDate(r.data), cols.data, y);
+    doc.text(fmtN(r.entregas), cols.ent, y, { align: "right" });
+    doc.text(r.origem === "sem_valor" ? "sem valor" : fmtR(r.valorUnit), cols.unit, y, { align: "right" });
+    doc.text(fmtR(r.subtotal), cols.sub, y, { align: "right" });
+    y += 6.5;
   });
-  y += 2; doc.line(14, y, 196, y); y += 6;
-  doc.text(`Bruto: ${fmtR(it.gross)}`, 190, y, { align: "right" }); y += 6;
-  (it.discounts || []).forEach((d) => { doc.text(`${d.motivo}: ${fmtR(d.valor)}`, 190, y, { align: "right" }); y += 6; });
-  if (it.adjustments) { doc.text(`Ajuste (${it.note || "manual"}): ${fmtR(it.adjustments)}`, 190, y, { align: "right" }); y += 6; }
-  doc.setFontSize(11); doc.text(`Líquido: ${fmtR(it.net)}`, 190, y, { align: "right" });
+  if (!rows.length) { doc.setTextColor(120); doc.text("Sem detalhamento por bairro neste fechamento.", L + 2, y); doc.setTextColor(20); y += 6.5; }
+  doc.setDrawColor(200); doc.line(L, y - 3, R, y - 3);
+
+  // totais
+  const lines: [string, number, boolean][] = [["Bruto", it.gross, false]];
+  (it.discounts || []).forEach((d) => lines.push([`${d.valor < 0 ? "Desconto" : "Bônus"}: ${d.motivo}`.slice(0, 60), d.valor, false]));
+  if (it.adjustments) lines.push([`Ajuste${it.note ? ` (${it.note})` : ""}`.slice(0, 60), it.adjustments, false]);
+  if (y + lines.length * 6 + 20 > 280) { doc.addPage(); y = 20; }
+  y += 5; doc.setFontSize(10);
+  lines.forEach(([label, val]) => {
+    doc.text(label, 120, y);
+    if (val < 0) doc.setTextColor(190, 30, 45); else if (label !== "Bruto") doc.setTextColor(20, 120, 60);
+    doc.text(fmtR(val), R - 2, y, { align: "right" });
+    doc.setTextColor(20); y += 6;
+  });
+  y += 1; doc.setFillColor(20, 21, 26); doc.rect(116, y - 5, R - 116, 10, "F");
+  doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+  doc.text("Líquido a receber", 120, y + 1.5); doc.text(fmtR(it.net), R - 2, y + 1.5, { align: "right" });
+  doc.setTextColor(20); doc.setFont("helvetica", "normal");
+  if (it.pendente) { y += 14; doc.setFontSize(9); doc.setTextColor(190, 30, 45); doc.text("Atenção: há entregas sem valor definido; o total pode mudar após conferência.", L, y); doc.setTextColor(20); }
+
+  // rodapé com paginação
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i); doc.setFontSize(8); doc.setTextColor(130);
+    doc.text(`Página ${i} de ${pages}`, R, 290, { align: "right" });
+    doc.text(String(it.driver), L, 290);
+  }
   doc.save(`recibo-${it.driver.replace(/\s+/g, "_")}-${p.period_start}-${p.period_end}.pdf`);
 }
 
