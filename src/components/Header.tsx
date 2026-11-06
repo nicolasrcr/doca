@@ -15,6 +15,8 @@ export default function Header({
   const { signOut } = useAuth();
   const imp = useImport();
   const [open, setOpen] = useState(false);
+  const [novo, setNovo] = useState(false);
+  const [nome, setNome] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,16 +52,24 @@ export default function Header({
                   {b.city ? <span className="muted"> · {b.city}</span> : null}
                 </button>
               ))}
-              <button
-                style={{ fontWeight: 600 }}
-                onClick={() => {
-                  const name = prompt("Nome da nova base (ex.: F SBS-DF):");
-                  if (name && name.trim()) onNewBase(name);
-                  setOpen(false);
-                }}
-              >
-                + Nova base
-              </button>
+              {novo ? (
+                <form
+                  className="baseNew"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!nome.trim()) return;
+                    onNewBase(nome.trim());
+                    setNome(""); setNovo(false); setOpen(false);
+                  }}
+                >
+                  <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome da base (ex.: F SBS-DF)" aria-label="Nome da nova base" />
+                  <button type="submit" disabled={!nome.trim()}>Criar</button>
+                </form>
+              ) : (
+                <button style={{ fontWeight: 600 }} onClick={() => setNovo(true)}>
+                  + Nova base
+                </button>
+              )}
             </div>
           )}
         </div>
