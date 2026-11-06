@@ -70,7 +70,7 @@ export default function Clientes() {
         </div>
         <p className="muted small">Pacotes com problema no dia carregado, mais qualquer ocorrência já registrada. Cada uma pode receber uma tratativa (nota, responsável) e um status — aberto, em tratativa, barrado, devolvido ou resolvido.</p>
         <div className="tablewrap">
-          <table className="drv">
+          <table className="drv actr">
             <thead><tr><th>Código</th><th>Motorista</th><th>Motivo</th><th>Tratativa</th><th>Status</th><th></th></tr></thead>
             <tbody>
               {rows.length ? rows.map((r) => {

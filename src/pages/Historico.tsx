@@ -147,7 +147,7 @@ export default function Historico() {
         <details className="cargas" style={{ marginTop: "1rem" }}>
           <summary>Dias salvos ({history.length})</summary>
           <div className="tablewrap">
-            <table className="drv">
+            <table className="drv r2 r3 actr">
               <thead><tr><th>Dia</th><th>% entregue</th><th>Pacotes</th><th></th></tr></thead>
               <tbody>
                 {history.slice().reverse().map((h) => (

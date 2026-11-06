@@ -59,7 +59,7 @@ export default function Membros() {
         )}
 
         <div className="tablewrap" style={{ marginTop: "1rem" }}>
-          <table className="drv">
+          <table className="drv actr">
             <thead>
               <tr><th>Pessoa</th><th>Papel</th><th></th></tr>
             </thead>

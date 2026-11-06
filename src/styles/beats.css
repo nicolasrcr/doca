@@ -189,3 +189,29 @@ table.motTable .rowActions .btn.small{height:34px;padding:0 .8rem;white-space:no
 .toolbar .btn.small{height:36px;white-space:nowrap}
 table.drv .btn.small{white-space:nowrap}
 table.drv th{white-space:nowrap}
+
+/* tabelas: colunas numéricas à direita (classes r2…r9) e coluna de ações à direita (actr) */
+table.drv.r2 th:nth-child(2),table.drv.r2 td:nth-child(2),table.drv.r3 th:nth-child(3),table.drv.r3 td:nth-child(3),table.drv.r4 th:nth-child(4),table.drv.r4 td:nth-child(4),table.drv.r5 th:nth-child(5),table.drv.r5 td:nth-child(5),table.drv.r6 th:nth-child(6),table.drv.r6 td:nth-child(6),table.drv.r7 th:nth-child(7),table.drv.r7 td:nth-child(7),table.drv.r8 th:nth-child(8),table.drv.r8 td:nth-child(8),table.drv.r9 th:nth-child(9),table.drv.r9 td:nth-child(9){text-align:right;font-variant-numeric:tabular-nums}
+table.drv.actr th:last-child,table.drv.actr td:last-child{text-align:right;white-space:nowrap}
+table.drv th{white-space:nowrap}
+table.drv td{vertical-align:middle}
+table.drv tbody tr{transition:background .12s}
+table.drv tbody tr:hover{background:color-mix(in srgb,var(--ink) 3%,transparent)}
+.tablewrap{-webkit-overflow-scrolling:touch}
+table.drv td .btn.small,table.drv td button.small{height:34px;padding:0 .8rem;white-space:nowrap}
+table.drv td select,table.drv td input:not([type=checkbox]):not([type=radio]){height:36px;border-radius:10px;border:1px solid var(--line);padding:0 .65rem}
+table.drv td select{padding-right:1.6rem}
+
+/* formulários em linha (.row com rótulos e campos) */
+.panel .row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+.panel .row label{display:flex;flex-direction:column;gap:.25rem;font-size:.78rem;color:var(--muted)}
+.panel .row input:not([type=checkbox]):not([type=radio]):not([type=file]),.panel .row select{height:40px;border-radius:10px;border:1px solid var(--line);padding:0 .75rem}
+.panel .row .btn:not(.small){height:40px;white-space:nowrap}
+.panel .row label.inline,.panel .row label.small:has(input[type=checkbox]){flex-direction:row;align-items:center;color:inherit}
+@media (max-width:640px){
+  .panel{padding:1rem .85rem}
+  .panel .row>input,.panel .row>select,.panel .row>label{flex:1 1 100%;min-width:0}
+  .pageHead{gap:.5rem}
+  .kpis{flex-wrap:wrap}
+  .kpi{flex:1 1 40%;border-bottom:1px solid var(--line)}
+}

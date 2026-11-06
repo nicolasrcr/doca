@@ -119,7 +119,7 @@ export default function Planos() {
       <div className="panel">
         <h3>Clientes com plano ({lista.length})</h3>
         {lista.length === 0 ? <p className="muted">Nenhum plano cadastrado.</p> : (
-          <div className="tablewrap"><table className="drv">
+          <div className="tablewrap"><table className="drv r5">
             <thead><tr><th>Cliente</th><th>Plano</th><th>Situação</th><th>Teste até</th><th>Bases</th><th>Pagamento</th></tr></thead>
             <tbody>{lista.map((x) => (
               <tr key={x.owner_id}>
