@@ -16,19 +16,91 @@ function exportPayoutCsv(p: Payout) {
 async function exportPayoutPdf(p: Payout, baseName: string) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF();
-  doc.setFontSize(14); doc.text(`Fechamento — ${baseName}`, 14, 16);
-  doc.setFontSize(10); doc.text(`Período: ${brDate(p.period_start)} a ${brDate(p.period_end)}  |  status: ${p.status}`, 14, 23);
-  let y = 34; doc.setFontSize(9);
-  doc.text("Motorista", 14, y); doc.text("Entregas", 100, y, { align: "right" }); doc.text("R$/entrega", 130, y, { align: "right" }); doc.text("Líquido", 190, y, { align: "right" });
-  y += 4; doc.line(14, y, 196, y); y += 5;
-  let total = 0;
-  p.items.forEach((it) => {
-    if (y > 280) { doc.addPage(); y = 16; }
-    doc.text(String(it.driver).slice(0, 40), 14, y); doc.text(fmtN(it.deliveries), 100, y, { align: "right" });
-    doc.text(fmtR(it.rate), 130, y, { align: "right" }); doc.text(fmtR(it.net), 190, y, { align: "right" });
-    total += it.net; y += 6;
+  const L = 14, R = 196, W = R - L;
+  const net = p.items.reduce((a, i) => a + i.net, 0);
+  const gross = p.items.reduce((a, i) => a + i.gross, 0);
+  const deliveries = p.items.reduce((a, i) => a + i.deliveries, 0);
+  const cols = { nome: L + 2, ent: 98, unit: 120, bruto: 146, ajuste: 163, liq: R - 2 };
+  const money = (n: number) => fmtR(n);
+
+  // cabeçalho
+  doc.setFillColor(20, 21, 26); doc.rect(0, 0, 210, 30, "F");
+  doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+  doc.text("Fechamento de pagamento", L, 14);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+  doc.text(baseName || "", L, 22);
+  doc.text(`Emitido em ${brDate(todayISO())}`, R, 22, { align: "right" });
+  doc.setTextColor(20);
+
+  // resumo
+  let y = 42;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+  doc.text(`Período: ${brDate(p.period_start)} a ${brDate(p.period_end)}`, L, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(100);
+  doc.text(`Status: ${p.status}`, R, y, { align: "right" });
+  doc.setTextColor(20);
+  y += 8;
+  const boxes: [string, string][] = [["Motoristas", String(p.items.length)], ["Entregas", fmtN(deliveries)], ["Bruto", money(gross)], ["Líquido", money(net)]];
+  const bw = (W - 3 * 4) / 4;
+  boxes.forEach(([label, val], i) => {
+    const x = L + i * (bw + 4);
+    doc.setFillColor(243, 244, 247); doc.roundedRect(x, y, bw, 15, 2, 2, "F");
+    doc.setFontSize(8); doc.setTextColor(110); doc.text(label, x + 3, y + 5.5);
+    doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(20); doc.text(val, x + 3, y + 12);
+    doc.setFont("helvetica", "normal");
   });
-  y += 2; doc.line(14, y, 196, y); y += 6; doc.setFontSize(11); doc.text(`Total: ${fmtR(total)}`, 190, y, { align: "right" });
+  y += 27;
+  if (p.items.some((i) => i.pendente)) {
+    doc.setFontSize(9); doc.setTextColor(190, 30, 45);
+    doc.text("Atenção: fechamento parcial; há entregas sem valor definido.", L, y - 4);
+    doc.setTextColor(20); y += 4;
+  }
+
+  const head = (yy: number) => {
+    doc.setFillColor(238, 239, 242); doc.rect(L, yy - 5, W, 8, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+    doc.text("Motorista", cols.nome, yy);
+    doc.text("Entregas", cols.ent, yy, { align: "right" }); doc.text("R$/entrega", cols.unit + 10, yy, { align: "right" });
+    doc.text("Bruto", cols.bruto + 8, yy, { align: "right" }); doc.text("Desc./ajuste", cols.ajuste + 8, yy, { align: "right" });
+    doc.text("Líquido", cols.liq, yy, { align: "right" });
+    doc.setFont("helvetica", "normal");
+  };
+
+  head(y); y += 8;
+  p.items.forEach((it, i) => {
+    if (y > 270) { doc.addPage(); y = 20; head(y); y += 8; }
+    if (i % 2) { doc.setFillColor(248, 248, 250); doc.rect(L, y - 4.5, W, 6.5, "F"); }
+    const disc = (it.discounts || []).reduce((a, d) => a + d.valor, 0) + (it.adjustments || 0);
+    doc.setFontSize(9);
+    doc.text(String(it.driver).slice(0, 36) + (it.pendente ? " *" : ""), cols.nome, y);
+    doc.text(fmtN(it.deliveries), cols.ent, y, { align: "right" });
+    doc.text(fmtR(it.rate), cols.unit + 10, y, { align: "right" });
+    doc.text(money(it.gross), cols.bruto + 8, y, { align: "right" });
+    if (disc < 0) doc.setTextColor(190, 30, 45); else if (disc > 0) doc.setTextColor(20, 120, 60); else doc.setTextColor(150);
+    doc.text(disc ? money(disc) : "—", cols.ajuste + 8, y, { align: "right" });
+    doc.setTextColor(20); doc.setFont("helvetica", "bold");
+    doc.text(money(it.net), cols.liq, y, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    y += 6.5;
+  });
+  doc.setDrawColor(200); doc.line(L, y - 3, R, y - 3);
+
+  // total
+  if (y > 262) { doc.addPage(); y = 24; }
+  y += 3;
+  doc.setFillColor(20, 21, 26); doc.rect(110, y - 5, R - 110, 10, "F");
+  doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+  doc.text("Total líquido", 114, y + 1.5); doc.text(money(net), R - 2, y + 1.5, { align: "right" });
+  doc.setTextColor(20); doc.setFont("helvetica", "normal");
+  if (p.items.some((i) => i.pendente)) { doc.setFontSize(8); doc.setTextColor(120); doc.text("* motorista com entregas sem valor definido", L, y + 1.5); doc.setTextColor(20); }
+
+  // rodapé com paginação
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i); doc.setFontSize(8); doc.setTextColor(130);
+    doc.text(`${brDate(p.period_start)} a ${brDate(p.period_end)}`, L, 290);
+    doc.text(`Página ${i} de ${pages}`, R, 290, { align: "right" });
+  }
   doc.save(`fechamento-${p.period_start}-${p.period_end}.pdf`);
 }
 
