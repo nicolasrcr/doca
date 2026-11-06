@@ -24,6 +24,10 @@ export default function Alertas({ openScreen }: { openScreen: (id: ActiveScreen)
     );
   }
 
+  const ordem: Record<string, number> = { critico: 0, aviso: 1, info: 2 };
+  const ordenados = [...alerts].sort((a, b) => (ordem[a.nivel] ?? 3) - (ordem[b.nivel] ?? 3));
+  const contagem = (n: string) => alerts.filter((a) => a.nivel === n).length;
+
   const alertaF = (curBase?.alerta ?? 70) / 100;
   const abaixo = result.list.filter((d) => d.pct < alertaF).sort((a, b) => a.pct - b.pct);
 
@@ -56,21 +60,28 @@ export default function Alertas({ openScreen }: { openScreen: (id: ActiveScreen)
         {!alerts.length ? (
           <div className="okbox">Nenhum alerta operacional hoje.</div>
         ) : (
-          <div className="tablewrap">
-            <table className="drv">
-              <thead><tr><th>Nível</th><th>Motorista</th><th>O que aconteceu</th><th>Ação sugerida</th></tr></thead>
-              <tbody>
-                {alerts.map((a) => (
-                  <tr key={a.id}>
-                    <td><span className={"badge " + NIVEL_CLASS[a.nivel]}>{NIVEL_LABEL[a.nivel]}</span></td>
-                    <td>{a.motorista || "—"}</td>
-                    <td>{a.mensagem}</td>
-                    <td className="muted small">{a.acao}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="alertSummary">
+              {(["critico", "aviso", "info"] as const).map((n) => contagem(n) > 0 && (
+                <span key={n} className={"badge " + NIVEL_CLASS[n]}>{contagem(n)} {NIVEL_LABEL[n].toLowerCase()}{contagem(n) > 1 && n !== "info" ? "s" : ""}</span>
+              ))}
+            </div>
+            <div className="tablewrap">
+              <table className="drv alertTable">
+                <thead><tr><th>Nível</th><th>Motorista</th><th>O que aconteceu</th><th>Ação sugerida</th></tr></thead>
+                <tbody>
+                  {ordenados.map((a) => (
+                    <tr key={a.id} className={"nv-" + a.nivel}>
+                      <td><span className={"badge " + NIVEL_CLASS[a.nivel]}>{NIVEL_LABEL[a.nivel]}</span></td>
+                      <td className="who">{a.motorista || "—"}</td>
+                      <td>{a.mensagem}</td>
+                      <td className="muted">{a.acao}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </section>
