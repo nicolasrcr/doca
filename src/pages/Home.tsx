@@ -24,20 +24,24 @@ function PrimeirosPassos({ openScreen }: { openScreen: (id: ActiveScreen) => voi
   if (passos.every((p) => p.ok)) return null;
   const feitos = passos.filter((p) => p.ok).length;
   return (
-    <details className="infobox passos" style={{ marginBottom: "1rem" }}>
+    <details className="infobox passos" open={feitos < 3} style={{ marginBottom: "1rem" }}>
       <summary>
-        <b>Primeiros passos</b> <span className="muted small">{feitos} de {passos.length}</span>
+        <b>Primeiros passos</b>
+        <span className="muted small">{feitos} de {passos.length}</span>
         <span className="passosBarra" aria-hidden="true"><i style={{ width: `${(feitos / passos.length) * 100}%` }} /></span>
       </summary>
-      <ul style={{ listStyle: "none", padding: 0, margin: ".6rem 0 0" }}>
+      <ul className="passosLista">
         {passos.map((p) => (
-          <li key={p.txt} style={{ padding: ".15rem 0" }}>
-            {p.ok ? "✓ " : "○ "}{p.txt}
-            {!p.ok && p.ir && <> · <button className="btn small" onClick={() => openScreen(p.ir!)}>Abrir</button></>}
+          <li key={p.txt} className={p.ok ? "ok" : ""}>
+            <span className="passoMarca" aria-hidden="true">{p.ok ? "✓" : ""}</span>
+            <span className="passoTxt">{p.txt}</span>
+            {!p.ok && p.ir && <button className="btn small" onClick={() => openScreen(p.ir!)}>Abrir</button>}
           </li>
         ))}
       </ul>
-      <button className="btn small" style={{ marginTop: ".5rem" }} onClick={() => { try { localStorage.setItem(chave, "1"); } catch { /* ignore */ } setOculto(true); }}>Dispensar</button>
+      <div className="passosFoot">
+        <button className="btn small" onClick={() => { try { localStorage.setItem(chave, "1"); } catch { /* ignore */ } setOculto(true); }}>Dispensar</button>
+      </div>
     </details>
   );
 }
