@@ -244,3 +244,15 @@ details.passos .passosBarra{flex:1 1 90px;max-width:160px}
 .viz-card .viz-legend{margin-bottom:.4rem}
 .viz-prio .p{transition:background .12s}
 .viz-prio .p:hover{background:var(--hover)}
+
+/* Alertas */
+.badge.warn{color:var(--warn)}
+.alertSummary{display:flex;gap:.5rem;flex-wrap:wrap;margin:0 0 .8rem}
+.alertSummary .badge{padding:.2rem .7rem;font-size:.8rem}
+table.alertTable td{vertical-align:top;padding:.7rem .6rem;white-space:normal;line-height:1.4}
+table.alertTable td:first-child,table.alertTable td.who{white-space:nowrap}
+table.alertTable td:nth-child(3){min-width:240px}
+table.alertTable td:nth-child(4){min-width:220px;font-size:.86rem}
+table.alertTable tr.nv-critico td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
+table.alertTable tr.nv-aviso td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+table.alertTable tr.nv-info td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
