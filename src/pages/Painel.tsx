@@ -147,6 +147,7 @@ export function PainelView({ base, history, openScreen, onImport, drivers = [] }
             {ultimo ? <>Dados até {brDate(ultimo)}. </> : null}Meta de entrega: {fmtPct(meta)}. Alerta abaixo de {fmtPct(alerta)}. Você ajusta isso em “Dados e metas da base”.
           </Dica>
           <span className="spacer"></span>
+          <div className="headActions">
           <select id="pv-periodo" aria-label="Período" value={periodo} onChange={(e) => setPeriodo(Number(e.target.value))}>
             <option value={7}>7 dias</option>
             <option value={14}>14 dias</option>
@@ -157,6 +158,7 @@ export function PainelView({ base, history, openScreen, onImport, drivers = [] }
             {openScreen && <MenuItem onClick={() => openScreen("saude")}>Ver sugestões da base</MenuItem>}
             {openScreen && <MenuItem onClick={() => openScreen("historico")}>Histórico e ranking</MenuItem>}
           </Menu>
+          </div>
         </div>
 
         {s.diasSemCarta > 0 && (
@@ -264,7 +266,7 @@ export function PainelView({ base, history, openScreen, onImport, drivers = [] }
 
             {semana && (
               <div className="viz-grid">
-                <div className="viz-span-12" style={{ gridColumn: "1 / -1" }}>
+                <div className="viz-span-12">
                   <ChartCard title={`${semana.nomeDia}: mesmo dia da semana`} caption={`Último dia salvo (${brDate(semana.data)}) contra a média das ${semana.n} ${semana.nomeDia.toLowerCase()}s anteriores`}>
                     <p style={{ margin: 0, fontSize: "1.1rem" }}>
                       <b>{fmtPct(semana.pct)}</b> contra <b>{fmtPct(semana.media)}</b> de média:{" "}
