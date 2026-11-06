@@ -265,7 +265,7 @@ export default function Geral({ openScreen }: { openScreen: (id: ActiveScreen) =
           <div className="panel">
             <h3>Ranking das bases</h3>
             <div className="tablewrap">
-              <table className="drv">
+              <table className="drv r3 r4 r5 r7 actr">
                 <thead><tr><th>Farol</th><th>Base</th><th>Pacotes</th><th>Entregues</th><th>Meta</th><th>Tendência</th><th>Problemas</th><th>Último dia salvo</th><th></th></tr></thead>
                 <tbody>
                   {perBase.map((x) => (

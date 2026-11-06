@@ -106,7 +106,7 @@ export default function Orgs() {
             <div className="infobox">Nenhum pedido até agora.</div>
           ) : (
             <div className="tablewrap">
-              <table className="drv">
+              <table className="drv actr">
                 <thead><tr><th>Quem</th><th>Contato</th><th>Bases</th><th>Mensagem</th><th>Situação</th><th></th></tr></thead>
                 <tbody>
                   {accessRequests.map((r) => (
@@ -203,7 +203,7 @@ export default function Orgs() {
           {canManage && <p className="muted small">Quem ainda não tem conta recebe um convite pendente e entra na empresa assim que se cadastrar com esse e-mail.</p>}
 
           <div className="tablewrap" style={{ marginTop: "1rem" }}>
-            <table className="drv">
+            <table className="drv actr">
               <thead><tr><th>Pessoa</th><th>Papel</th><th></th></tr></thead>
               <tbody>
                 {members.map((m) => (
@@ -262,7 +262,7 @@ export default function Orgs() {
             </button>
           </div>
           <div className="tablewrap">
-            <table className="drv">
+            <table className="drv actr">
               <thead><tr><th>E-mail</th><th></th></tr></thead>
               <tbody>
                 {loose.map((a) => (

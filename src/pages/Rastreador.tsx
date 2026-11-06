@@ -101,7 +101,7 @@ export default function Rastreador() {
 
           <h3>Paradas longas ({r.paradas.length})</h3>
           {r.paradas.length === 0 ? <p className="muted">Nenhuma parada acima de {paradaMin} minutos.</p> : (
-            <div className="tablewrap"><table className="drv">
+            <div className="tablewrap"><table className="drv r2">
               <thead><tr><th>Início</th><th>Duração</th><th>Local</th></tr></thead>
               <tbody>{r.paradas.map((p, i) => (
                 <tr key={i}><td>{hhmm(p.inicio)}</td><td>{p.minutos} min</td>

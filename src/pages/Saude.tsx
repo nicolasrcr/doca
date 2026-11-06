@@ -161,7 +161,7 @@ export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) =
         <div className="panel" style={{ marginBottom: "1rem" }}>
           <h3>Motoristas no período</h3>
           <div className="tablewrap">
-            <table className="drv">
+            <table className="drv r2 r3 r4 r5">
               <thead><tr><th>Motorista</th><th>Pacotes</th><th>Por dia</th><th>Entregues</th><th>Dias abaixo do alerta</th><th>Farol</th></tr></thead>
               <tbody>
                 {s.motoristas.map((m) => (
@@ -184,7 +184,7 @@ export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) =
         <div className="panel">
           <h3>Bairros que mais perdem entregas</h3>
           <div className="tablewrap">
-            <table className="drv">
+            <table className="drv r2 r3">
               <thead><tr><th>Bairro</th><th>Pacotes</th><th>Entregues</th><th>Quem mais entrega lá</th><th>Farol</th></tr></thead>
               <tbody>
                 {s.bairros.slice(0, 15).map((b) => (

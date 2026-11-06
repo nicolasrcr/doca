@@ -76,7 +76,7 @@ export default function Auditoria() {
         {aba === "imp" && (
           batches.length === 0 ? <p className="muted">Nenhuma importação registrada ainda.</p> : (
             <div className="tablewrap">
-              <table className="drv">
+              <table className="drv r5 r6 r7">
                 <thead><tr><th>Quando</th><th>Quem</th><th>Dia dos dados</th><th>Arquivos</th><th>Pacotes</th><th>Entregues</th><th>Divergências</th></tr></thead>
                 <tbody>
                   {batches.map((b) => (
