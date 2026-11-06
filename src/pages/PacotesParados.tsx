@@ -6,6 +6,7 @@ import { fmtN, todayISO } from "../lib/format";
 import { contextoWhats } from "../lib/share";
 import type { SheetTable } from "../lib/types";
 import { Dica } from "../components/ui";
+import { useDialog } from "../hooks/useDialog";
 
 interface AgingRow {
   cod: string;
@@ -45,9 +46,24 @@ function rowsFromSheet(t: SheetTable): AgingRow[] {
   return out;
 }
 
+function TratativaForm({ resumo, onSave, onCancel }: { resumo: string; onSave: (nota: string) => void; onCancel: () => void }) {
+  const [nota, setNota] = useState("");
+  return (
+    <form className="tratForm" onSubmit={(e) => { e.preventDefault(); onSave(nota.trim()); }}>
+      <p className="muted small" style={{ margin: "0 0 .6rem" }}>{resumo}</p>
+      <textarea autoFocus rows={4} value={nota} onChange={(e) => setNota(e.target.value)} placeholder="O que foi feito ou combinado com a unidade?" aria-label="Tratativa" />
+      <div className="row" style={{ marginTop: ".75rem", justifyContent: "flex-end" }}>
+        <button type="button" className="btn" onClick={onCancel}>Cancelar</button>
+        <button type="submit" className="btn primary">Registrar tratativa</button>
+      </div>
+    </form>
+  );
+}
+
 export default function PacotesParados() {
   const { curBase, saveOccurrence, canEdit } = useDoca();
   const toast = useToast();
+  const dialog = useDialog();
   const [sheet, setSheet] = useState<SheetTable | null>(null);
   const [filterUnidade, setFilterUnidade] = useState("");
   const [minDias, setMinDias] = useState(0);
@@ -142,28 +158,28 @@ export default function PacotesParados() {
           <div className="panel" style={{ marginBottom: "1rem" }}>
             <h3>Cruzamento — unidade responsável × faixa de aging</h3>
             <div className="tablewrap">
-              <table className="drv">
+              <table className="drv adjTable">
                 <thead>
                   <tr>
                     <th>Unidade responsável</th>
-                    {agingLabels.map((l) => <th key={l}>{l}</th>)}
-                    <th>Total</th>
+                    {agingLabels.map((l) => <th key={l} className="r">{l}</th>)}
+                    <th className="r">Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {crosstab.map(([unidade, bucket]) => (
                     <tr key={unidade}>
                       <td style={{ textAlign: "left" }}>{unidade}</td>
-                      {agingLabels.map((l) => <td key={l}>{bucket[l] ? fmtN(bucket[l]) : "—"}</td>)}
-                      <td><b>{fmtN(Object.values(bucket).reduce((a, v) => a + v, 0))}</b></td>
+                      {agingLabels.map((l) => <td key={l} className="r">{bucket[l] ? fmtN(bucket[l]) : "—"}</td>)}
+                      <td className="r"><b>{fmtN(Object.values(bucket).reduce((a, v) => a + v, 0))}</b></td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr>
                     <td style={{ textAlign: "left" }}><b>Total geral</b></td>
-                    {agingLabels.map((l) => <td key={l}><b>{fmtN(totals[l])}</b></td>)}
-                    <td><b>{fmtN(rows.length)}</b></td>
+                    {agingLabels.map((l) => <td key={l} className="r"><b>{fmtN(totals[l])}</b></td>)}
+                    <td className="r"><b>{fmtN(rows.length)}</b></td>
                   </tr>
                 </tfoot>
               </table>
@@ -178,7 +194,7 @@ export default function PacotesParados() {
                 <option value="">Todas as unidades</option>
                 {unidades.map((u) => <option key={u} value={u}>{u}</option>)}
               </select>
-              <label className="small">Mín. dias parado <input type="number" min={0} value={minDias} onChange={(e) => setMinDias(Number(e.target.value) || 0)} style={{ width: 60 }} /></label>
+              <label className="small">Mín. dias parado <input type="number" min={0} value={minDias} onChange={(e) => setMinDias(Number(e.target.value) || 0)} className="num" /></label>
               <button className="btn small" onClick={exportCsv}>Exportar CSV</button>
               <button className="btn small" onClick={() => copyText(whatsText(), toast)}>📋 Resumo WhatsApp</button>
               <button className="btn small" onClick={() => setSheet(null)}>Trocar arquivo</button>
@@ -200,17 +216,26 @@ export default function PacotesParados() {
                           <button
                             className="btn small"
                             onClick={() => {
-                              const nota = prompt(`Tratativa para o pacote ${r.cod} (${r.aging}):`);
-                              if (nota == null) return;
-                              saveOccurrence({
-                                base_id: curBase?.id || "",
-                                code: r.cod,
-                                driver: r.unidade || "Sem unidade",
-                                motivo: r.aging,
-                                nota,
-                                responsavel: "",
-                                resolvido: false,
-                              });
+                              dialog.open(
+                                `Tratativa — ${r.cod}`,
+                                <TratativaForm
+                                  resumo={`${r.aging} · ${r.unidade || "Sem unidade"}`}
+                                  onSave={(nota) => {
+                                    saveOccurrence({
+                                      base_id: curBase?.id || "",
+                                      code: r.cod,
+                                      driver: r.unidade || "Sem unidade",
+                                      motivo: r.aging,
+                                      nota,
+                                      responsavel: "",
+                                      resolvido: false,
+                                    });
+                                    dialog.close();
+                                  }}
+                                  onCancel={() => dialog.close()}
+                                />,
+                                []
+                              );
                             }}
                           >
                             Tratativa

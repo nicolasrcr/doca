@@ -173,3 +173,19 @@ table.motTable .rowActions .btn.small{height:34px;padding:0 .8rem;white-space:no
 .lane .pct small{display:block;font-weight:400;color:var(--muted);font-size:.74rem}
 .lanehead span:last-child{text-align:right}
 @media (max-width:760px){.lane .who2{white-space:normal}}
+
+/* padrões gerais: formulários de criação, diálogos e barras de ferramentas */
+.baseNew{display:flex;gap:.4rem;padding:.4rem}
+.baseNew input{flex:1;min-width:0;height:36px;border-radius:10px;border:1px solid var(--line);padding:0 .65rem}
+.baseNew button{width:auto!important;height:36px;padding:0 .8rem!important;font-weight:600;background:var(--ink)!important;color:var(--bg)!important;border-radius:10px!important}
+.baseNew button:disabled{opacity:.5}
+.baseForm{display:grid;grid-template-columns:minmax(220px,1fr) minmax(160px,260px) auto;gap:.6rem;align-items:center;margin:0 0 1rem}
+.baseForm input,.baseForm select{height:40px;width:100%;min-width:0;border-radius:10px;border:1px solid var(--line);padding:0 .75rem}
+.baseForm .btn{height:40px;white-space:nowrap}
+@media (max-width:760px){.baseForm{grid-template-columns:1fr}}
+.tratForm textarea{width:100%;border-radius:12px;border:1px solid var(--line);padding:.7rem .85rem;resize:vertical;font:inherit}
+.toolbar input[type=number].num,label input.num{height:36px;width:72px;text-align:right;border-radius:10px;border:1px solid var(--line);padding:0 .5rem}
+.toolbar select,.toolbar input:not([type=checkbox]):not([type=radio]){height:40px;border-radius:10px}
+.toolbar .btn.small{height:36px;white-space:nowrap}
+table.drv .btn.small{white-space:nowrap}
+table.drv th{white-space:nowrap}
