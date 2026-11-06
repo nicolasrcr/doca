@@ -46,7 +46,7 @@ export default function Precos() {
           motorista → padrão da base. Deixe "Bairro" em branco para valer em qualquer bairro.</Dica>
         </div>
         {canEdit && (
-          <div className="toolbar">
+          <div className="toolbar priceForm rule">
             <select value={ruleDriver} onChange={(e) => setRuleDriver(e.target.value)}>
               <option value="">Todos os motoristas</option>
               {drivers.map((d) => (
@@ -56,7 +56,7 @@ export default function Precos() {
             <input placeholder="Bairro (vazio = todos)" value={ruleBairro} onChange={(e) => setRuleBairro(e.target.value)} />
             <input
               type="number" step={0.01} min={0} placeholder="R$/entrega"
-              value={ruleAmount} onChange={(e) => setRuleAmount(e.target.value)} style={{ width: 110 }}
+              value={ruleAmount} onChange={(e) => setRuleAmount(e.target.value)}
             />
             <button
               className="btn primary"
@@ -73,15 +73,15 @@ export default function Precos() {
           </div>
         )}
         <div className="tablewrap">
-          <table className="drv">
-            <thead><tr><th>Motorista</th><th>Bairro</th><th>Valor/entrega</th><th></th></tr></thead>
+          <table className="drv adjTable">
+            <thead><tr><th>Motorista</th><th>Bairro</th><th className="r">Valor/entrega</th><th></th></tr></thead>
             <tbody>
               {paymentRules.map((r) => (
                 <tr key={r.id}>
                   <td>{nameOf(r.driver_id)}</td>
                   <td>{r.bairro || "Todos"}</td>
-                  <td>{fmtR(r.amount)}</td>
-                  <td>{canEdit && <button className="btn small" onClick={() => deletePaymentRule(r.id)}>Excluir</button>}</td>
+                  <td className="r" style={{ fontWeight: 600 }}>{fmtR(r.amount)}</td>
+                  <td className="r">{canEdit && <button className="btn small" onClick={() => deletePaymentRule(r.id)}>Excluir</button>}</td>
                 </tr>
               ))}
               {!paymentRules.length && (
@@ -98,7 +98,7 @@ export default function Precos() {
           <Dica>Ex.: sábado paga R$ 1,00 a mais por entrega — cadastre um recorrente para "Sábado". O acréscimo soma ao valor do bairro/motorista naquele dia.</Dica>
         </div>
         {canEdit && (
-          <div className="toolbar">
+          <div className="toolbar priceForm day">
             <select value={dayKind} onChange={(e) => setDayKind(e.target.value as "data" | "semana")}>
               <option value="data">Data específica</option>
               <option value="semana">Dia da semana recorrente</option>
@@ -113,7 +113,7 @@ export default function Precos() {
             <input placeholder="Motivo (ex.: Sábado)" value={dayLabel} onChange={(e) => setDayLabel(e.target.value)} />
             <input
               type="number" step={0.01} placeholder="Acréscimo R$"
-              value={dayAmount} onChange={(e) => setDayAmount(e.target.value)} style={{ width: 110 }}
+              value={dayAmount} onChange={(e) => setDayAmount(e.target.value)}
             />
             <button
               className="btn primary"
@@ -134,15 +134,15 @@ export default function Precos() {
           </div>
         )}
         <div className="tablewrap">
-          <table className="drv">
-            <thead><tr><th>Quando</th><th>Motivo</th><th>Acréscimo</th><th></th></tr></thead>
+          <table className="drv adjTable">
+            <thead><tr><th>Quando</th><th>Motivo</th><th className="r">Acréscimo</th><th></th></tr></thead>
             <tbody>
               {specialDays.map((s) => (
                 <tr key={s.id}>
                   <td>{s.day_date ? s.day_date.split("-").reverse().join("/") : WEEKDAYS[s.weekday ?? 0] + " (toda semana)"}</td>
                   <td>{s.label || "—"}</td>
-                  <td>{fmtR(s.amount)}</td>
-                  <td>{canEdit && <button className="btn small" onClick={() => deleteSpecialDay(s.id)}>Excluir</button>}</td>
+                  <td className="r" style={{ fontWeight: 600, color: s.amount < 0 ? "var(--bad)" : "var(--ok)" }}>{fmtR(s.amount)}</td>
+                  <td className="r">{canEdit && <button className="btn small" onClick={() => deleteSpecialDay(s.id)}>Excluir</button>}</td>
                 </tr>
               ))}
               {!specialDays.length && <tr><td colSpan={4} className="muted small">Nenhum dia especial cadastrado.</td></tr>}
@@ -193,7 +193,7 @@ export default function Precos() {
                   <td>{a.motivo}</td>
                   <td className="r" style={{ color: a.valor < 0 ? "var(--bad)" : "var(--ok)", fontWeight: 600 }}>{fmtR(a.valor)}</td>
                   <td><span className={"stat " + (a.applied_payout_id ? "fechado" : "rascunho")}>{a.applied_payout_id ? "aplicado" : "pendente"}</span></td>
-                  <td>{canEdit && !a.applied_payout_id && <button className="btn small" onClick={() => deleteAdjustment(a.id)}>Excluir</button>}</td>
+                  <td className="r">{canEdit && !a.applied_payout_id && <button className="btn small" onClick={() => deleteAdjustment(a.id)}>Excluir</button>}</td>
                 </tr>
               ))}
               {!adjustments.length && <tr><td colSpan={6} className="muted small">Nenhum lançamento ainda.</td></tr>}
