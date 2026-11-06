@@ -138,3 +138,21 @@ table.bdTable tfoot td{border-top:1.5px solid var(--ink);border-bottom:0}
 .priceForm .btn{height:40px;white-space:nowrap}
 @media (max-width:980px){.priceForm.rule,.priceForm.day{grid-template-columns:1fr 1fr}.priceForm .btn{grid-column:1/-1}}
 @media (max-width:560px){.priceForm.rule,.priceForm.day{grid-template-columns:1fr}}
+
+/* página de Motoristas */
+.newDriver{display:grid;grid-template-columns:minmax(200px,360px) auto;gap:.6rem;align-items:center;justify-content:start}
+.newDriver input{height:40px;border-radius:10px;border:1px solid var(--line);padding:0 .75rem;min-width:0}
+.newDriver .btn{height:40px;white-space:nowrap}
+@media (max-width:560px){.newDriver{grid-template-columns:1fr}}
+table.motTable{min-width:980px}
+table.motTable th,table.motTable td{white-space:nowrap;vertical-align:middle;padding:.55rem .5rem}
+table.motTable .r{text-align:right}
+table.motTable .c{text-align:center}
+table.motTable td input:not([type=checkbox]){height:36px;width:100%;border-radius:10px;border:1px solid var(--line);padding:0 .65rem}
+table.motTable td:nth-child(1){min-width:200px}
+table.motTable td:nth-child(2){min-width:220px}
+table.motTable td input.narrow{width:110px}
+table.motTable td input.num{width:96px;text-align:right}
+table.motTable td input[type=checkbox]{width:18px;height:18px}
+table.motTable .rowActions{display:flex;gap:.4rem;justify-content:flex-end}
+table.motTable .rowActions .btn.small{height:34px;padding:0 .8rem;white-space:nowrap}

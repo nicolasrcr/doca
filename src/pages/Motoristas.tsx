@@ -44,16 +44,18 @@ function DriverRow({ d, canEdit, onSave, onDelete, rateHint, onLink, onRevoke }:
     <tr>
       <td><input value={name} disabled={!canEdit} onChange={(e) => setName(e.target.value)} onBlur={save} /></td>
       <td><input value={aliases} disabled={!canEdit} placeholder="ex.: JOAO S., joao silva" onChange={(e) => setAliases(e.target.value)} onBlur={save} /></td>
-      <td><input value={placa} disabled={!canEdit} placeholder="ABC1D23" style={{ width: 90 }} onChange={(e) => setPlaca(e.target.value)} onBlur={save} /></td>
-      <td><input value={veiculo} disabled={!canEdit} placeholder="Moto, Van…" style={{ width: 100 }} onChange={(e) => setVeiculo(e.target.value)} onBlur={save} /></td>
-      <td><input className="rate" type="number" min={0} step={0.01} value={rate} disabled={!canEdit} placeholder={rateHint} onChange={(e) => setRate(e.target.value === "" ? "" : parseFloat(e.target.value))} onBlur={save} /></td>
-      <td><input type="number" min={50} max={100} step={0.5} style={{ width: 72 }} value={meta} disabled={!canEdit} placeholder="da base" onChange={(e) => setMeta(e.target.value === "" ? "" : parseFloat(e.target.value))} onBlur={save} /></td>
-      <td><input type="checkbox" checked={active} disabled={!canEdit} onChange={(e) => { setActive(e.target.checked); onSave({ active: e.target.checked }); }} /></td>
-      <td>{canEdit && (<>
-        <button className="btn small" type="button" title="Copia um link só de leitura com o resultado deste motorista" onClick={() => onLink(d.name)}>Link do motorista</button>{" "}
-        <button className="btn small" type="button" onClick={() => onRevoke(d.name)}>Revogar links</button>{" "}
-        <button className="btn small" type="button" onClick={() => { if (confirm(`Excluir ${name}?`)) onDelete(); }}>Excluir</button>
-      </>)}</td>
+      <td><input value={placa} disabled={!canEdit} placeholder="ABC1D23" className="narrow" onChange={(e) => setPlaca(e.target.value)} onBlur={save} /></td>
+      <td><input value={veiculo} disabled={!canEdit} placeholder="Moto, Van…" className="narrow" onChange={(e) => setVeiculo(e.target.value)} onBlur={save} /></td>
+      <td><input className="rate num" type="number" min={0} step={0.01} value={rate} disabled={!canEdit} placeholder={rateHint} onChange={(e) => setRate(e.target.value === "" ? "" : parseFloat(e.target.value))} onBlur={save} /></td>
+      <td><input className="num" type="number" min={50} max={100} step={0.5} value={meta} disabled={!canEdit} placeholder="da base" onChange={(e) => setMeta(e.target.value === "" ? "" : parseFloat(e.target.value))} onBlur={save} /></td>
+      <td className="c"><input type="checkbox" checked={active} disabled={!canEdit} onChange={(e) => { setActive(e.target.checked); onSave({ active: e.target.checked }); }} /></td>
+      <td>{canEdit && (
+        <div className="rowActions">
+          <button className="btn small" type="button" title="Copia um link só de leitura com o resultado deste motorista" onClick={() => onLink(d.name)}>Copiar link</button>
+          <button className="btn small" type="button" title="Desativa todos os links já gerados para este motorista" onClick={() => onRevoke(d.name)}>Revogar</button>
+          <button className="btn small danger" type="button" onClick={() => { if (confirm(`Excluir ${name}?`)) onDelete(); }}>Excluir</button>
+        </div>
+      )}</td>
     </tr>
   );
 }
@@ -62,6 +64,7 @@ export default function Motoristas() {
   const { curBase, drivers, updateDriver, deleteDriver, addDriver, result, canEdit, audit, history } = useDoca();
   const { user } = useAuth();
   const toast = useToast();
+  const [novoNome, setNovoNome] = useState("");
 
   const gerarLink = async (nome: string) => {
     if (!curBase || !user) return;
@@ -132,14 +135,17 @@ export default function Motoristas() {
           {seenInData.length > 0 && canEdit && (
             <button className="btn" onClick={async () => { for (const n of seenInData) await addDriver(n); }}>Cadastrar {seenInData.length} dos arquivos</button>
           )}
-          {canEdit && (
-            <button className="btn primary" onClick={() => { const n = prompt("Nome do motorista:"); if (n && n.trim()) addDriver(n); }}>Novo motorista</button>
-          )}
         </div>
+        {canEdit && (
+          <form className="toolbar newDriver" onSubmit={(e) => { e.preventDefault(); const n = novoNome.trim(); if (!n) return; addDriver(n); setNovoNome(""); }}>
+            <input placeholder="Nome do novo motorista" value={novoNome} onChange={(e) => setNovoNome(e.target.value)} aria-label="Nome do novo motorista" />
+            <button className="btn primary" type="submit" disabled={!novoNome.trim()}>Adicionar motorista</button>
+          </form>
+        )}
         <div className="tablewrap">
-          <table className="drv">
+          <table className="drv motTable">
             <thead>
-              <tr><th>Nome</th><th>Apelidos vindos do JMS</th><th>Placa</th><th>Veículo</th><th>Valor/entrega</th><th>Meta (%)</th><th>Ativo</th><th></th></tr>
+              <tr><th>Nome</th><th>Apelidos vindos do JMS</th><th>Placa</th><th>Veículo</th><th className="r">Valor/entrega</th><th className="r">Meta (%)</th><th className="c">Ativo</th><th></th></tr>
             </thead>
             <tbody>
               {drivers.map((d) => (
@@ -154,6 +160,7 @@ export default function Motoristas() {
                   onRevoke={revogar}
                 />
               ))}
+              {!drivers.length && <tr><td colSpan={8} className="muted small">Nenhum motorista cadastrado ainda.</td></tr>}
             </tbody>
           </table>
         </div>
