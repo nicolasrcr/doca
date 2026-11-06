@@ -490,7 +490,7 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
         <Dica>Solte aqui as exportações do JMS: o Monitoramento de bipagem e a Carta de porte (e a Coleta, se a base faz). As colunas são reconhecidas pelo nome. Nada sai do navegador até você salvar o dia.</Dica>
         <span className="spacer"></span>
         {result && (
-          <>
+          <div className="headActions">
             <input type="date" aria-label="Dia dos dados" value={dayDate} onChange={(e) => setDayDate(e.target.value)} />
             <Menu rotulo="Compartilhar">
               <MenuItem onClick={openWhatsDialog}>Resumo para WhatsApp</MenuItem>
@@ -503,7 +503,7 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
               <MenuItem onClick={() => exportRomaneio("devolucao")}>Romaneio de devolução (PDF)</MenuItem>
             </Menu>
             <button className="btn primary" disabled={!canEdit} onClick={() => saveDay()}>Salvar no histórico</button>
-          </>
+          </div>
         )}
       </div>
 
@@ -618,7 +618,7 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
           </details>
           <div>
             <div>
-              <div className="toolbar">
+              <div className="toolbar entToolbar">
                 <input type="search" placeholder="Buscar motorista" value={q} onChange={(e) => setQ(e.target.value)} />
                 <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
                   <option value="pior">Pior desempenho primeiro</option>

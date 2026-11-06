@@ -156,3 +156,20 @@ table.motTable td input.num{width:96px;text-align:right}
 table.motTable td input[type=checkbox]{width:18px;height:18px}
 table.motTable .rowActions{display:flex;gap:.4rem;justify-content:flex-end}
 table.motTable .rowActions .btn.small{height:34px;padding:0 .8rem;white-space:nowrap}
+
+/* página de Entregas */
+.headActions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.headActions input[type=date]{height:40px;border-radius:10px;border:1px solid var(--line);padding:0 .75rem}
+.headActions .btn,.headActions .menuAcoes>.btn{height:40px;white-space:nowrap}
+@media (max-width:760px){.headActions{width:100%}.headActions .spacer{display:none}}
+.entToolbar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.entToolbar input[type=search]{height:40px;border-radius:10px;border:1px solid var(--line);padding:0 .85rem;flex:1 1 220px;max-width:340px;min-width:0}
+.entToolbar select{height:40px;border-radius:10px;border:1px solid var(--line);padding:0 .75rem}
+.entToolbar .legend{margin:0 0 0 auto}
+@media (max-width:760px){.entToolbar input[type=search]{max-width:none}.entToolbar .legend{margin-left:0;width:100%}}
+.lane .who2{white-space:nowrap}
+.lane .who2 small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lane .pct{text-align:right;font-weight:600}
+.lane .pct small{display:block;font-weight:400;color:var(--muted);font-size:.74rem}
+.lanehead span:last-child{text-align:right}
+@media (max-width:760px){.lane .who2{white-space:normal}}
