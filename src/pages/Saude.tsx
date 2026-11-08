@@ -37,15 +37,15 @@ export function FarolDot({ farol, size = 12 }: { farol: Farol; size?: number }) 
 
 function InsightCard({ i, onPlan, aberto = false }: { i: Insight; onPlan?: (i: Insight) => void; aberto?: boolean }) {
   return (
-    <details className="panel insightCard" open={aberto} style={{ marginBottom: ".5rem", borderLeft: `4px solid ${i.nivel === "critico" ? "var(--bad)" : i.nivel === "aviso" ? "var(--warn)" : "var(--ok)"}` }}>
-      <summary className="row" style={{ cursor: "pointer", listStyle: "none" }}>
+    <details className="insightCard" open={aberto} style={{ borderLeft: `4px solid ${i.nivel === "critico" ? "var(--bad)" : i.nivel === "aviso" ? "var(--warn)" : "var(--ok)"}` }}>
+      <summary>
         <b>{i.titulo}</b>
         <span className="spacer"></span>
         <span className={"badge " + NIVEL_CLASS[i.nivel]}>{NIVEL_LABEL[i.nivel]}</span>
       </summary>
       <p className="muted small" style={{ margin: ".4rem 0 .2rem" }}>{i.detalhe}</p>
       {i.acao && <p style={{ margin: ".2rem 0 0" }}>{i.acao}</p>}
-      {onPlan && <button className="btn small" style={{ marginTop: ".5rem" }} onClick={() => onPlan(i)}>＋ Plano de ação</button>}
+      {onPlan && <button className="btn small insightBtn" onClick={() => onPlan(i)}>＋ Plano de ação</button>}
     </details>
   );
 }
@@ -93,14 +93,13 @@ export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) =
       )}
 
       <div className="panel" style={{ marginBottom: "1rem", borderLeft: `6px solid ${FAROL_COR[s.farol]}` }}>
-        <div className="row" style={{ alignItems: "center" }}>
+        <div className="saudeHero">
           <div>
             <div className="small muted">Farol da base</div>
             <div style={{ fontSize: "1.5rem", fontWeight: 600 }}><FarolDot farol={s.farol} size={18} />{FAROL_LABEL[s.farol]}</div>
             <div>{s.veredito}</div>
           </div>
-          <span className="spacer"></span>
-          <div style={{ textAlign: "right" }}>
+          <div className="saudePct">
             <div style={{ fontSize: "2rem", fontWeight: 600 }}>{s.pct != null ? fmtPct(s.pct) : "—"}</div>
             <div className="small muted">
               entregues · meta {meta}%
@@ -111,7 +110,7 @@ export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) =
         </div>
       </div>
 
-      <div className="kpis">
+      <div className="kpis saudeKpis">
         {s.indicadores.map((ind) => (
           <div className="kpi" key={ind.chave}>
             <b style={{ color: FAROL_COR[ind.farol] }}>{ind.valor != null ? fmtPct(ind.valor) : "—"}</b>
@@ -125,7 +124,7 @@ export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) =
         {s.prioridades.length === 0 ? (
           <div className="okbox">Nenhuma prioridade crítica no período. Continue acompanhando o farol.</div>
         ) : (
-          s.prioridades.map((i, n) => (<div key={i.id}><div className="small muted">Prioridade {n + 1}</div><InsightCard i={i} aberto={n === 0} onPlan={canEdit ? noPlano : undefined} /></div>))
+          s.prioridades.map((i, n) => (<div key={i.id} className="prioItem"><div className="prioNum">Prioridade {n + 1}</div><InsightCard i={i} aberto={n === 0} onPlan={canEdit ? noPlano : undefined} /></div>))
         )}
       </div>
 
@@ -135,8 +134,8 @@ export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) =
           const list = s.insights.filter((i) => i.area === a);
           if (!list.length) return null;
           return (
-            <div key={a} style={{ marginBottom: "1rem" }}>
-              <h4 style={{ margin: ".4rem 0" }}>{AREA_LABEL[a]}</h4>
+            <div key={a} className="areaBloco">
+              <h4>{AREA_LABEL[a]}</h4>
               {list.map((i) => (<InsightCard key={i.id} i={i} onPlan={canEdit ? noPlano : undefined} />))}
             </div>
           );
@@ -149,7 +148,7 @@ export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) =
           <h3>Sugestão de redistribuição de rotas</h3>
           <p className="muted small">Bairros abaixo da meta em que um motorista com resultado melhor poderia assumir parte da entrega. É uma estimativa feita só com os números do período: o gerente decide, conhecendo a rua, o veículo e a carga de cada um.</p>
           {sugestoes.map((r) => (
-            <div key={r.bairro} className="panel" style={{ marginBottom: ".5rem" }}>
+            <div key={r.bairro} className="sugCard">
               <b>{r.bairro}</b>: passar de {r.de} para {r.para}
               <div className="small muted">{r.motivo} Pode render cerca de {r.ganho} entregas a mais no período ({r.pacotes} pacotes do bairro hoje com {r.de}).</div>
             </div>
@@ -166,7 +165,7 @@ export default function Saude({ openScreen }: { openScreen: (id: ActiveScreen) =
               <tbody>
                 {s.motoristas.map((m) => (
                   <tr key={m.nome}>
-                    <td>{m.nome}</td>
+                    <td className="who">{m.nome}</td>
                     <td className="num">{fmtN(m.t)}</td>
                     <td className="num">{fmtN(Math.round(m.porDia))}</td>
                     <td className="num">{fmtPct(m.pct)}</td>

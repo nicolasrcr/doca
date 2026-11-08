@@ -256,3 +256,24 @@ table.alertTable td:nth-child(4){min-width:220px;font-size:.86rem}
 table.alertTable tr.nv-critico td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
 table.alertTable tr.nv-aviso td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
 table.alertTable tr.nv-info td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
+
+/* Saúde */
+.saudeHero{display:flex;align-items:center;justify-content:space-between;gap:1.2rem;flex-wrap:wrap}
+.saudePct{text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:560px){.saudePct{text-align:left}}
+.saudeKpis{margin-top:0}
+details.insightCard{background:var(--surface);border-radius:var(--r-sm);padding:.75rem 1rem;margin:0 0 .5rem;box-shadow:0 0 0 1px color-mix(in srgb,var(--line) 70%,transparent)}
+details.insightCard>summary{display:flex;align-items:center;gap:.6rem;cursor:pointer;list-style:none}
+details.insightCard>summary::after{content:"▾";margin-left:auto;color:var(--muted);font-size:.8rem;transition:transform .15s}
+details.insightCard[open]>summary::after{transform:rotate(180deg)}
+details.insightCard>summary b{flex:1;min-width:0}
+details.insightCard>summary .badge{order:2}
+details.insightCard>summary::after{order:3;margin-left:.2rem}
+details.insightCard>p{max-width:75ch;line-height:1.45}
+.insightBtn{margin-top:.6rem;height:34px}
+.prioItem{margin-bottom:.4rem}
+.prioNum{font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:.5rem 0 .3rem}
+.areaBloco{margin:1.1rem 0 0}
+.areaBloco:first-of-type{margin-top:.6rem}
+.areaBloco h4{margin:0 0 .5rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.sugCard{background:var(--surface);border-radius:var(--r-sm);padding:.75rem 1rem;margin:0 0 .5rem;box-shadow:0 0 0 1px color-mix(in srgb,var(--line) 70%,transparent);line-height:1.45}
