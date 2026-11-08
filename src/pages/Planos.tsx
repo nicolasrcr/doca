@@ -7,6 +7,7 @@ import { brDate } from "../lib/format";
 import type { Subscription } from "../lib/types";
 
 const STATUS: Record<Subscription["status"], string> = { teste: "Em teste", ativo: "Ativo", suspenso: "Suspenso" };
+const STATUS_CLASS: Record<Subscription["status"], string> = { teste: "conferido", ativo: "fechado", suspenso: "suspenso" };
 
 export function diasDeTeste(s: Subscription | null): number | null {
   if (!s || s.status !== "teste" || !s.trial_ate) return null;
@@ -83,11 +84,17 @@ export default function Planos() {
         <div className="panel">
           <h2>Meu plano</h2>
           {!minha ? <p className="muted">Você está no acesso de testes, sem limite de bases e sem cobrança por enquanto.</p> : (
-            <>
-              <p><b>{minha.plano}</b> · {STATUS[minha.status]}{minha.trial_ate ? ` · teste até ${brDate(minha.trial_ate)}` : ""}</p>
-              <p className="muted small">{minha.limite_bases === null ? "Bases ilimitadas." : `Até ${minha.limite_bases} base(s).`}</p>
+            <div className="planoCard">
+              <div className="planoTopo">
+                <b className="planoNome">{minha.plano}</b>
+                <span className={"stat " + STATUS_CLASS[minha.status]}>{STATUS[minha.status]}</span>
+              </div>
+              <dl className="planoInfo">
+                {minha.trial_ate && <div><dt>Teste até</dt><dd>{brDate(minha.trial_ate)}</dd></div>}
+                <div><dt>Limite de bases</dt><dd>{minha.limite_bases === null ? "Ilimitado" : minha.limite_bases}</dd></div>
+              </dl>
               {minha.link_pagamento && <a className="btn primary" href={minha.link_pagamento} target="_blank" rel="noreferrer noopener">Pagar</a>}
-            </>
+            </div>
           )}
         </div>
       </section>
@@ -99,31 +106,41 @@ export default function Planos() {
       <div className="panel">
         <h2>Planos e cobrança</h2>
         <p className="muted">Defina plano, período de teste, limite de bases e o link de pagamento (Pix, cartão ou boleto gerado no seu banco ou gateway) de cada cliente. O Doca não processa o pagamento: ele mostra o link e bloqueia novas bases se o acesso for suspenso ou passar do limite. Cliente sem plano cadastrado continua sem limite.</p>
-        <form onSubmit={salvar} style={{ display: "grid", gap: ".5rem", maxWidth: 560 }}>
-          <input type="email" placeholder="E-mail do cliente (dono das bases)" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} required />
-          <div className="row">
-            <input placeholder="Plano (ex.: Básico)" value={f.plano} onChange={(e) => setF({ ...f, plano: e.target.value })} maxLength={40} />
-            <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} aria-label="Situação">
+        <form onSubmit={salvar} className="planoForm">
+          <label className="full">E-mail do cliente (dono das bases)
+            <input type="email" placeholder="cliente@empresa.com" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} required />
+          </label>
+          <label>Plano
+            <input placeholder="Ex.: Básico" value={f.plano} onChange={(e) => setF({ ...f, plano: e.target.value })} maxLength={40} />
+          </label>
+          <label>Situação
+            <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}>
               <option value="teste">Em teste</option><option value="ativo">Ativo</option><option value="suspenso">Suspenso</option>
             </select>
-          </div>
-          <div className="row">
-            <label className="small">Teste até <input type="date" value={f.trial} onChange={(e) => setF({ ...f, trial: e.target.value })} /></label>
-            <label className="small">Limite de bases <input type="number" min={0} value={f.limite} placeholder="sem limite" onChange={(e) => setF({ ...f, limite: e.target.value })} style={{ width: 110 }} /></label>
-          </div>
-          <input type="url" placeholder="Link de pagamento (https://…)" value={f.link} onChange={(e) => setF({ ...f, link: e.target.value })} pattern="https://.*" />
-          <input placeholder="Observação (opcional)" value={f.obs} onChange={(e) => setF({ ...f, obs: e.target.value })} maxLength={500} />
-          <button className="btn primary" type="submit">Salvar plano</button>
+          </label>
+          <label>Teste até
+            <input type="date" value={f.trial} onChange={(e) => setF({ ...f, trial: e.target.value })} />
+          </label>
+          <label>Limite de bases
+            <input type="number" min={0} value={f.limite} placeholder="sem limite" onChange={(e) => setF({ ...f, limite: e.target.value })} />
+          </label>
+          <label className="full">Link de pagamento
+            <input type="url" placeholder="https://…" value={f.link} onChange={(e) => setF({ ...f, link: e.target.value })} pattern="https://.*" />
+          </label>
+          <label className="full">Observação (opcional)
+            <input value={f.obs} onChange={(e) => setF({ ...f, obs: e.target.value })} maxLength={500} />
+          </label>
+          <div className="full planoAcoes"><button className="btn primary" type="submit">Salvar plano</button></div>
         </form>
       </div>
       <div className="panel">
         <h3>Clientes com plano ({lista.length})</h3>
         {lista.length === 0 ? <p className="muted">Nenhum plano cadastrado.</p> : (
-          <div className="tablewrap"><table className="drv r5">
+          <div className="tablewrap"><table className="drv adjTable r5">
             <thead><tr><th>Cliente</th><th>Plano</th><th>Situação</th><th>Teste até</th><th>Bases</th><th>Pagamento</th></tr></thead>
             <tbody>{lista.map((x) => (
               <tr key={x.owner_id}>
-                <td>{x.email}</td><td>{x.plano}</td><td>{STATUS[x.status]}</td>
+                <td className="who">{x.email}</td><td>{x.plano}</td><td><span className={"stat " + STATUS_CLASS[x.status]}>{STATUS[x.status]}</span></td>
                 <td>{x.trial_ate ? brDate(x.trial_ate) : "—"}</td>
                 <td>{x.bases}{x.limite_bases !== null ? ` / ${x.limite_bases}` : ""}</td>
                 <td>{x.link_pagamento ? <a href={x.link_pagamento} target="_blank" rel="noreferrer noopener">link</a> : "—"}</td>

@@ -277,3 +277,20 @@ details.insightCard>p{max-width:75ch;line-height:1.45}
 .areaBloco:first-of-type{margin-top:.6rem}
 .areaBloco h4{margin:0 0 .5rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 .sugCard{background:var(--surface);border-radius:var(--r-sm);padding:.75rem 1rem;margin:0 0 .5rem;box-shadow:0 0 0 1px color-mix(in srgb,var(--line) 70%,transparent);line-height:1.45}
+
+/* Planos */
+.stat.suspenso{color:var(--bad)}
+.planoForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem 1rem;max-width:720px;margin-top:1rem}
+.planoForm label{display:flex;flex-direction:column;gap:.3rem;font-size:.78rem;color:var(--muted)}
+.planoForm label.full,.planoForm .full{grid-column:1/-1}
+.planoForm input,.planoForm select{height:40px;width:100%;min-width:0;border-radius:10px;border:1px solid var(--line);padding:0 .75rem;color:var(--ink)}
+.planoAcoes{display:flex;justify-content:flex-end}
+.planoAcoes .btn{height:40px}
+@media (max-width:560px){.planoForm{grid-template-columns:1fr}}
+.planoCard{display:grid;gap:.9rem;max-width:460px}
+.planoTopo{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
+.planoNome{font-size:1.3rem;letter-spacing:-.02em}
+.planoInfo{display:flex;gap:1.6rem;flex-wrap:wrap;margin:0}
+.planoInfo dt{font-size:.74rem;color:var(--muted);margin:0}
+.planoInfo dd{margin:.1rem 0 0;font-weight:600;font-variant-numeric:tabular-nums}
+.planoCard .btn{justify-self:start}
