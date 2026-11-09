@@ -294,3 +294,17 @@ details.insightCard>p{max-width:75ch;line-height:1.45}
 .planoInfo dt{font-size:.74rem;color:var(--muted);margin:0}
 .planoInfo dd{margin:.1rem 0 0;font-weight:600;font-variant-numeric:tabular-nums}
 .planoCard .btn{justify-self:start}
+
+/* Clientes (ocorrências) */
+button.badge{border:0;cursor:pointer;font-family:inherit}
+button.badge.sel{box-shadow:0 0 0 2px currentColor}
+.occBar{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
+.occBar input[type=search]{height:40px;flex:1 1 260px;max-width:380px;min-width:0;border-radius:10px;border:1px solid var(--line);padding:0 .85rem}
+table.occTable td{vertical-align:top;padding:.65rem .55rem}
+table.occTable td.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.84rem;white-space:nowrap}
+table.occTable td.nota{min-width:200px;line-height:1.4}
+table.occTable td:nth-child(3){min-width:150px}
+.occForm{display:grid;gap:.35rem}
+.occForm label{font-size:.78rem;color:var(--muted);margin-top:.5rem}
+.occForm textarea,.occForm input,.occForm select{width:100%;border-radius:10px;border:1px solid var(--line);padding:.55rem .75rem;font:inherit}
+.occForm input,.occForm select{height:40px;padding:0 .75rem}

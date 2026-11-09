@@ -22,9 +22,20 @@ export default function Clientes() {
   const { occRows, saveOccurrence, canEdit } = useDoca();
   const dialog = useDialog();
   const [showResolved, setShowResolved] = useState(false);
+  const [busca, setBusca] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState<"" | OccurrenceStatus>("");
 
   const statusOf = (r: Occurrence): OccurrenceStatus => r.status || (r.resolvido ? "resolvido" : "aberto");
-  const rows = occRows().filter((r) => showResolved || statusOf(r) !== "resolvido");
+  const todas = occRows();
+  const termo = busca.trim().toLowerCase();
+  const rows = todas.filter((r) => {
+    const st = statusOf(r);
+    if (!showResolved && st === "resolvido" && filtroStatus !== "resolvido") return false;
+    if (filtroStatus && st !== filtroStatus) return false;
+    if (termo && !`${r.code} ${r.driver} ${r.motivo || ""} ${r.nota || ""}`.toLowerCase().includes(termo)) return false;
+    return true;
+  });
+  const contagem = (st: OccurrenceStatus) => todas.filter((r) => statusOf(r) === st).length;
 
   const openTreat = (row: Occurrence) => {
     let nota = row.nota || "";
@@ -34,7 +45,7 @@ export default function Clientes() {
       `Tratativa — ${row.code}`,
       <div>
         <p className="muted small">{row.driver} · {row.motivo || "sem motivo informado"}</p>
-        <div className="form">
+        <div className="form occForm">
           <label htmlFor="occNota">Nota</label>
           <textarea id="occNota" rows={3} defaultValue={nota} onChange={(e) => (nota = e.target.value)} />
           <label htmlFor="occResp">Responsável</label>
@@ -63,24 +74,34 @@ export default function Clientes() {
   return (
     <section className="pane active">
       <div className="panel">
-        <div className="row">
-          <h2 style={{ margin: 0 }}>Ocorrências</h2>
-          <span className="spacer"></span>
-          <label className="inline small"><input type="checkbox" checked={showResolved} onChange={(e) => setShowResolved(e.target.checked)} /> mostrar resolvidas</label>
+        <div className="pageHead">
+          <h2>Ocorrências</h2>
         </div>
-        <p className="muted small">Pacotes com problema no dia carregado, mais qualquer ocorrência já registrada. Cada uma pode receber uma tratativa (nota, responsável) e um status — aberto, em tratativa, barrado, devolvido ou resolvido.</p>
+        <p className="muted small" style={{ marginTop: 0 }}>Pacotes com problema no dia carregado, mais qualquer ocorrência já registrada. Cada uma pode receber uma tratativa (nota, responsável) e um status.</p>
+        <div className="alertSummary">
+          {(["aberto", "tratando", "barrado", "devolvido", "resolvido"] as OccurrenceStatus[]).map((st) => contagem(st) > 0 && (
+            <button key={st} type="button" className={"badge " + STATUS_CLASS[st] + (filtroStatus === st ? " sel" : "")} onClick={() => setFiltroStatus(filtroStatus === st ? "" : st)} title="Filtrar por este status">
+              {contagem(st)} {STATUS_LABEL[st].toLowerCase()}
+            </button>
+          ))}
+        </div>
+        <div className="toolbar occBar">
+          <input type="search" placeholder="Buscar por código, motorista ou motivo" value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar ocorrências" />
+          <label className="inline small"><input type="checkbox" checked={showResolved} onChange={(e) => setShowResolved(e.target.checked)} /> mostrar resolvidas</label>
+          {(busca || filtroStatus) && <button className="btn small" type="button" onClick={() => { setBusca(""); setFiltroStatus(""); }}>Limpar filtros</button>}
+        </div>
         <div className="tablewrap">
-          <table className="drv actr">
+          <table className="drv actr occTable">
             <thead><tr><th>Código</th><th>Motorista</th><th>Motivo</th><th>Tratativa</th><th>Status</th><th></th></tr></thead>
             <tbody>
               {rows.length ? rows.map((r) => {
                 const st = statusOf(r);
                 return (
                 <tr key={r.code}>
-                  <td style={{ fontFamily: "ui-monospace,Menlo,Consolas,monospace" }}>{r.code}</td>
+                  <td className="mono">{r.code}</td>
                   <td>{r.driver}</td>
                   <td>{r.motivo || "—"}</td>
-                  <td>{r.nota || "—"}{r.responsavel ? <span className="muted small"> ({r.responsavel})</span> : null}</td>
+                  <td className="nota">{r.nota || "—"}{r.responsavel ? <span className="muted small"> ({r.responsavel})</span> : null}</td>
                   <td><span className={"badge " + STATUS_CLASS[st]}>{STATUS_LABEL[st]}</span></td>
                   <td>{canEdit && <button className="btn small" onClick={() => openTreat(r)}>Registrar tratativa</button>}</td>
                 </tr>
