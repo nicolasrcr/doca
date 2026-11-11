@@ -129,16 +129,15 @@ export default function Conferencia() {
             <h2>Conferência de carga</h2>
             <Dica>Aponte a câmera do celular para o código de barras ou QR já impresso na etiqueta do pacote. O sistema confere contra a lista importada — não gera nada em tela para o coletor ler, então não interfere na bipagem oficial do JMS.</Dica>
           </div>
-          <div className="row" style={{ margin: ".75rem 0" }}>
-            <label className="inline">
-              Motorista{" "}
+          <div className="confForm">
+            <label className="confField">Motorista
               <select value={drvSel} onChange={(e) => setDrvSel(e.target.value)}>
                 <option value="">Todos os motoristas</option>
                 {names.map((n) => <option key={n}>{n}</option>)}
               </select>
             </label>
-            <label className="inline small"><input type="checkbox" checked={inclProb} onChange={(e) => setInclProb(e.target.checked)} /> incluir pacotes com problema</label>
-            <button className="btn primary" onClick={start}>Iniciar conferência</button>
+            <label className="confCheck"><input type="checkbox" checked={inclProb} onChange={(e) => setInclProb(e.target.checked)} /> Incluir pacotes com problema</label>
+            <button className="btn primary confStart" onClick={start}>Iniciar conferência</button>
           </div>
           {!result && <div className="warnbox">Carregue as planilhas na aba Entregas do dia antes de iniciar a conferência.</div>}
         </div>
@@ -152,13 +151,17 @@ export default function Conferencia() {
     <section className="pane active">
       <div className="conf">
         <div className="panel">
+          <div className="confMini" aria-hidden="true">
+            <b>{scanned} de {total}</b>
+            <div className="progress"><div style={{ width: `${total ? (scanned / total) * 100 : 0}%` }}></div></div>
+          </div>
           {camAvailable && (
             <div id="camWrap">
               <div id="camReader"></div>
               <div className={"scanFlash " + (flash ? "on" : "")}></div>
             </div>
           )}
-          <div className="row" style={{ marginTop: ".6rem" }}>
+          <div className="confCam">
             <button
               className="btn"
               onClick={async () => {
@@ -171,7 +174,7 @@ export default function Conferencia() {
             </button>
             <span className="muted small">{camStatus}</span>
           </div>
-          <div className="lastCode">{lastCode}</div>
+          <div className="lastCode">{lastCode || <span className="muted">Aguardando leitura…</span>}</div>
           <div className="manualScan">
             <input
               value={manual}
@@ -185,13 +188,13 @@ export default function Conferencia() {
         </div>
         <div className="panel">
           <h3>Progresso</h3>
-          <div>{scanned} de {total} conferidos</div>
-          <div className="progress"><div style={{ width: `${total ? (scanned / total) * 100 : 0}%` }}></div></div>
-          <h3 style={{ marginTop: "1rem" }}>Divergências</h3>
+          <div className="confNum"><b>{scanned}</b> de {total} conferidos <span className="muted">· {total ? Math.round((scanned / total) * 100) : 0}%</span></div>
+          <div className="progress big"><div style={{ width: `${total ? (scanned / total) * 100 : 0}%` }}></div></div>
+          <h3 style={{ marginTop: "1.2rem" }}>Divergências {divergences.length > 0 && <span className="badge bad">{divergences.length}</span>}</h3>
           <ul className="divlist">
             {divergences.length ? divergences.slice(0, 30).map((d, i) => <li className="bad2" key={i}><span>{d.code}</span><span>{d.type}</span></li>) : <li className="muted">Nenhuma ainda.</li>}
           </ul>
-          <div className="row" style={{ marginTop: "1rem" }}>
+          <div className="confActions">
             <button className="btn" onClick={() => { const codes = [...map.values()].filter((x) => x.scanned).map((x) => x.code); if (!codes.length) { toast("Nada conferido ainda"); return; } copyText(codes.join("\n"), toast); }}>Copiar conferidos</button>
             <button className="btn danger" onClick={end}>Encerrar</button>
           </div>
