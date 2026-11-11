@@ -72,7 +72,7 @@ export default function Rastreador() {
           <h2>Rastreador (beta)</h2>
           <Dica>Importe o histórico do rastreador de um veículo (CSV ou GPX, um dia) e veja a que horas saiu, quanto rodou e onde ficou parado, para comparar com os horários do JMS. O arquivo é lido só no seu navegador: não é enviado nem guardado.</Dica>
         </div>
-        <div className="drop" style={{ maxWidth: 480 }}>
+        <div className="drop rastDrop">
           <h3>Histórico do rastreador <span className="tag">CSV ou GPX</span></h3>
           <input type="file" accept=".csv,.gpx,.txt" onChange={(e) => { const f = e.target.files?.[0]; if (f) void abrir(f); e.target.value = ""; }} />
           <p className="small muted">Colunas aceitas no CSV: data e hora, latitude, longitude e, se tiver, velocidade.</p>
@@ -82,12 +82,11 @@ export default function Rastreador() {
 
       {r && (
         <div className="panel">
-          <div className="row">
-            <h3 style={{ margin: 0 }}>{arquivo}</h3>
-            <span className="spacer"></span>
-            <label className="small">Parada longa a partir de{" "}
-              <input type="number" min={3} max={60} value={paradaMin} style={{ width: 60 }}
-                onChange={(e) => { const v = Number(e.target.value) || 10; setParadaMin(v); if (brutos) setR(resumir(brutos, { paradaMin: v })); }} /> min
+          <div className="rastHead">
+            <h3>{arquivo}</h3>
+            <label className="rastParam">Parada longa a partir de
+              <span><input type="number" min={3} max={60} value={paradaMin}
+                onChange={(e) => { const v = Number(e.target.value) || 10; setParadaMin(v); if (brutos) setR(resumir(brutos, { paradaMin: v })); }} /> min</span>
             </label>
           </div>
           <div className="kpis" style={{ margin: ".8rem 0" }}>
@@ -97,11 +96,15 @@ export default function Rastreador() {
             <div className="kpi"><div className="small muted">Parado em rota</div><b>{fmtN(r.minutosParado)} min</b></div>
           </div>
           <Trajeto r={r} />
-          <p className="small muted">Verde: início. Vermelho: fim. Círculos laranja: paradas longas, com a duração.</p>
+          <div className="legend rastLegend">
+            <span><i style={{ background: "var(--ok)" }}></i>Início</span>
+            <span><i style={{ background: "var(--bad)" }}></i>Fim</span>
+            <span><i style={{ background: "var(--v2, #e31837)", opacity: 0.45 }}></i>Parada longa (com a duração)</span>
+          </div>
 
-          <h3>Paradas longas ({r.paradas.length})</h3>
+          <h3 className="rastSec">Paradas longas ({r.paradas.length})</h3>
           {r.paradas.length === 0 ? <p className="muted">Nenhuma parada acima de {paradaMin} minutos.</p> : (
-            <div className="tablewrap"><table className="drv r2">
+            <div className="tablewrap"><table className="drv adjTable r2">
               <thead><tr><th>Início</th><th>Duração</th><th>Local</th></tr></thead>
               <tbody>{r.paradas.map((p, i) => (
                 <tr key={i}><td>{hhmm(p.inicio)}</td><td>{p.minutos} min</td>
@@ -110,23 +113,23 @@ export default function Rastreador() {
             </table></div>
           )}
 
-          <h3>Comparar com o JMS</h3>
+          <h3 className="rastSec">Comparar com o JMS</h3>
           {nomes.length === 0 ? (
             <p className="muted small">Não há horários do JMS salvos para {iso.split("-").reverse().join("/")}. Importe e salve esse dia para comparar.</p>
           ) : (
             <>
-              <label className="small">Motorista deste veículo{" "}
+              <label className="rastParam">Motorista deste veículo
                 <select value={motorista} onChange={(e) => setMotorista(e.target.value)}>
                   <option value="">Escolha…</option>
                   {nomes.map((n) => (<option key={n} value={n}>{n}</option>))}
                 </select>
               </label>
               {jms && (
-                <div className="tablewrap" style={{ marginTop: ".6rem" }}><table className="drv">
+                <div className="tablewrap" style={{ marginTop: ".6rem" }}><table className="drv adjTable r2 r3">
                   <thead><tr><th></th><th>Rastreador</th><th>JMS</th></tr></thead>
                   <tbody>
-                    <tr><td>Saída da base</td><td>{hhmm(r.saida)}</td><td>{jms.saida || "—"}</td></tr>
-                    <tr><td>Fim do dia</td><td>{hhmm(r.retorno)}</td><td>{jms.ultimaEntrega || "—"} (última entrega)</td></tr>
+                    <tr><td className="who">Saída da base</td><td>{hhmm(r.saida)}</td><td>{jms.saida || "—"}</td></tr>
+                    <tr><td className="who">Fim do dia</td><td>{hhmm(r.retorno)}</td><td>{jms.ultimaEntrega || "—"} (última entrega)</td></tr>
                   </tbody>
                 </table></div>
               )}
