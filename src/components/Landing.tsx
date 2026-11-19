@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import DocaLogo from "./DocaLogo";
+import SenhaInput from "./SenhaInput";
 
 type Aba = "in" | "up";
 
@@ -46,7 +47,7 @@ function LoginCard({ inicial = "in" }: { inicial?: Aba }) {
           <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </label>
         <label>Senha
-          <input type="password" autoComplete={aba === "in" ? "current-password" : "new-password"} value={senha} onChange={(e) => setSenha(e.target.value)} minLength={aba === "up" ? 8 : undefined} required />
+          <SenhaInput autoComplete={aba === "in" ? "current-password" : "new-password"} value={senha} onChange={(e) => setSenha(e.target.value)} minLength={aba === "up" ? 8 : undefined} required />
           {aba === "up" && <span className="lp-hint">Use pelo menos 8 caracteres.</span>}
         </label>
         <button className="lp-pill block" type="submit" disabled={busy}>

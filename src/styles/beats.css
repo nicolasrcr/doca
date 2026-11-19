@@ -343,3 +343,8 @@ table.occTable td:nth-child(3){min-width:150px}
 .divlist{max-height:260px;overflow:auto}
 .confActions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.2rem}
 .confActions .btn{height:40px}
+
+.senhaWrap{position:relative;display:block}
+.senhaWrap input{width:100%;padding-right:2.8rem}
+.senhaEye{position:absolute;right:.35rem;top:50%;transform:translateY(-50%);width:36px;height:36px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer}
+.senhaEye:hover{color:var(--ink)}
