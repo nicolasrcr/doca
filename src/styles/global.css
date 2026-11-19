@@ -387,3 +387,13 @@ details.passos>summary{cursor:pointer;list-style:none;display:flex;align-items:c
 details.passos>summary::-webkit-details-marker{display:none}
 .passosBarra{flex:0 0 90px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
 .passosBarra i{display:block;height:100%;background:var(--ink)}
+/* brand-doca.css — Doca (CSS próprio). Acrescente no fim de src/styles/global.css.
+   Alinha a marca à paleta definida por você: #0071E3 / #102A43 / #5AC8FA. */
+:root{
+  --brand:#0068D6;        /* derivado do #0071E3 da paleta, escurecido para AA: 5,3:1 em branco, 4,9:1 em #f5f5f7 */
+  --brand-ink:#102A43;    /* títulos de marca */
+  --brand-soft:#5AC8FA;   /* destaque secundário (só fundo/ícone sobre escuro) */
+  --focus:#0058CC;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--brand:#4C8DFF;--focus:#4C8DFF}}
+:root[data-theme="dark"]{--brand:#4C8DFF;--focus:#4C8DFF}
