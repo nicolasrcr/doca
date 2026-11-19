@@ -53,7 +53,7 @@ export default function Precos() {
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
-            <input placeholder="Bairro (vazio = todos)" value={ruleBairro} onChange={(e) => setRuleBairro(e.target.value)} />
+            <input aria-label="Bairro (vazio = todos)" placeholder="Bairro (vazio = todos)" value={ruleBairro} onChange={(e) => setRuleBairro(e.target.value)} />
             <input
               type="number" step={0.01} min={0} placeholder="R$/entrega"
               value={ruleAmount} onChange={(e) => setRuleAmount(e.target.value)}
@@ -110,8 +110,8 @@ export default function Precos() {
                 {WEEKDAYS.map((w, i) => <option key={i} value={i}>{w}</option>)}
               </select>
             )}
-            <input placeholder="Motivo (ex.: Sábado)" value={dayLabel} onChange={(e) => setDayLabel(e.target.value)} />
-            <input
+            <input aria-label="Motivo" placeholder="Motivo (ex.: Sábado)" value={dayLabel} onChange={(e) => setDayLabel(e.target.value)} />
+            <input aria-label="Acréscimo R$"
               type="number" step={0.01} placeholder="Acréscimo R$"
               value={dayAmount} onChange={(e) => setDayAmount(e.target.value)}
             />
@@ -163,8 +163,8 @@ export default function Precos() {
               {drivers.map((d) => (<option key={d.id} value={d.id}>{d.name}</option>))}
             </select>
             <input type="date" value={adjData} onChange={(e) => setAdjData(e.target.value)} />
-            <input placeholder="Motivo (ex.: avaria, bônus meta)" value={adjMotivo} onChange={(e) => setAdjMotivo(e.target.value)} />
-            <input
+            <input aria-label="Motivo" placeholder="Motivo (ex.: avaria, bônus meta)" value={adjMotivo} onChange={(e) => setAdjMotivo(e.target.value)} />
+            <input aria-label="Valor (negativo=desconto)"
               type="number" step={0.01} placeholder="Valor (negativo=desconto)"
               value={adjValor} onChange={(e) => setAdjValor(e.target.value)}
             />

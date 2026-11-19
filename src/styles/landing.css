@@ -37,7 +37,7 @@
 .lp-mock{background:#111113;border-radius:22px 22px 0 0;box-shadow:0 0 0 1px #2a2a2d,0 -10px 80px rgba(0,113,227,.18);text-align:left;overflow:hidden}
 .lp-mock-bar{display:flex;gap:.4rem;align-items:center;padding:.8rem 1rem;border-bottom:1px solid #26262a}
 .lp-mock-bar i{width:10px;height:10px;border-radius:50%;background:#3a3a3e}
-.lp-mock-bar span{margin-left:auto;font-size:.72rem;color:#8e8e93}
+.lp-mock-bar span{margin-left:auto;font-size:.75rem;color:#8e8e93}
 .lp-mock-body{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;padding:1.6rem}
 .lp-mock-hero small{color:#a1a1a6;font-size:.85rem}
 .lp-mock-hero b{display:block;font-size:clamp(3.4rem,8vw,5.4rem);line-height:1;letter-spacing:-.04em;font-variant-numeric:tabular-nums}

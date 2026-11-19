@@ -28,7 +28,7 @@
 .viz-tile .val{font-size:2.1rem;font-weight:700;line-height:1.05;letter-spacing:-.035em}
 .viz-tile.hero .val{font-size:3.6rem;letter-spacing:-.045em}
 .viz-tile .sub{font-size:.82rem;color:var(--muted)}
-.viz-chip{white-space:nowrap;flex:0 0 auto;display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;font-weight:600;border-radius:99px;padding:.1rem .55rem;background:color-mix(in srgb,currentColor 12%,var(--surface))}
+.viz-chip{white-space:nowrap;flex:0 0 auto;display:inline-flex;align-items:center;gap:.3rem;font-size:.75rem;font-weight:600;border-radius:99px;padding:.1rem .55rem;background:color-mix(in srgb,currentColor 12%,var(--surface))}
 .viz-chip.verde{color:var(--ok)}.viz-chip.amarelo{color:var(--warn)}.viz-chip.vermelho{color:var(--bad)}.viz-chip.sem_dados{color:var(--muted)}
 .viz-delta{font-size:.8rem;font-weight:600}
 .viz-delta.bom{color:var(--ok)}.viz-delta.ruim{color:var(--bad)}.viz-delta.neutro{color:var(--muted)}
@@ -46,7 +46,7 @@
 .viz-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:.35rem;vertical-align:-1px}
 .viz-legend i.ln{height:2px;width:14px;border-radius:0;vertical-align:3px}
 .viz-svg{display:block;width:100%;overflow:visible}
-.viz-svg text{font-family:inherit;fill:var(--muted);font-size:11px}
+.viz-svg text{font-family:inherit;fill:var(--muted);font-size:.75rem}
 .viz-svg .grid{stroke:var(--v-grid);stroke-width:1}
 .viz-svg .axis{stroke:var(--v-axis);stroke-width:1}
 .viz-svg .hit{fill:transparent;cursor:crosshair}
@@ -106,7 +106,7 @@
 .viz-funil-barra{height:100%;background:var(--v1);border-radius:4px;transition:width .4s}
 .viz-funil-barra.fim{background:color-mix(in srgb,var(--ink) 55%,transparent)}
 .viz-funil-num{display:flex;flex-direction:column;align-items:flex-end;font-variant-numeric:tabular-nums;font-size:.8rem}
-.viz-funil-num span{color:var(--muted);font-size:.72rem}
+.viz-funil-num span{color:var(--muted);font-size:.75rem}
 .viz-funil-perdas{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.9rem}
 .viz-funil-perdas span{font-size:.76rem;padding:.2rem .55rem;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-radius:999px;color:var(--muted)}
 .viz-funil-perdas b{color:var(--ink);font-weight:600}

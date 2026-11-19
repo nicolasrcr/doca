@@ -173,7 +173,7 @@ export default function Conferencia() {
           </div>
           <div className="lastCode">{lastCode}</div>
           <div className="manualScan">
-            <input
+            <input aria-label="Ou digite o código e Enter"
               value={manual}
               onChange={(e) => setManual(e.target.value)}
               placeholder="Ou digite o código e Enter"

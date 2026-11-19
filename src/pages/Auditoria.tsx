@@ -98,7 +98,7 @@ export default function Auditoria() {
 
         {aba === "log" && podeVerLog && (
           <>
-            <input placeholder="Buscar por pessoa ou ação" value={busca} onChange={(e) => setBusca(e.target.value)} style={{ maxWidth: 320, marginBottom: ".6rem" }} />
+            <input aria-label="Buscar por pessoa ou ação" placeholder="Buscar por pessoa ou ação" value={busca} onChange={(e) => setBusca(e.target.value)} style={{ maxWidth: 320, marginBottom: ".6rem" }} />
             {logsF.length === 0 ? <p className="muted">Nada registrado ainda.</p> : (
               <div className="tablewrap">
                 <table className="drv">

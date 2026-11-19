@@ -43,11 +43,11 @@ function DriverRow({ d, canEdit, onSave, onDelete, rateHint, onLink, onRevoke }:
   return (
     <tr>
       <td><input value={name} disabled={!canEdit} onChange={(e) => setName(e.target.value)} onBlur={save} /></td>
-      <td><input value={aliases} disabled={!canEdit} placeholder="ex.: JOAO S., joao silva" onChange={(e) => setAliases(e.target.value)} onBlur={save} /></td>
-      <td><input value={placa} disabled={!canEdit} placeholder="ABC1D23" className="narrow" onChange={(e) => setPlaca(e.target.value)} onBlur={save} /></td>
-      <td><input value={veiculo} disabled={!canEdit} placeholder="Moto, Van…" className="narrow" onChange={(e) => setVeiculo(e.target.value)} onBlur={save} /></td>
+      <td><input aria-label="ex.: JOAO S., joao silva" value={aliases} disabled={!canEdit} placeholder="ex.: JOAO S., joao silva" onChange={(e) => setAliases(e.target.value)} onBlur={save} /></td>
+      <td><input aria-label="ABC1D23" value={placa} disabled={!canEdit} placeholder="ABC1D23" className="narrow" onChange={(e) => setPlaca(e.target.value)} onBlur={save} /></td>
+      <td><input aria-label="Moto, Van" value={veiculo} disabled={!canEdit} placeholder="Moto, Van…" className="narrow" onChange={(e) => setVeiculo(e.target.value)} onBlur={save} /></td>
       <td><input className="rate num" type="number" min={0} step={0.01} value={rate} disabled={!canEdit} placeholder={rateHint} onChange={(e) => setRate(e.target.value === "" ? "" : parseFloat(e.target.value))} onBlur={save} /></td>
-      <td><input className="num" type="number" min={50} max={100} step={0.5} value={meta} disabled={!canEdit} placeholder="da base" onChange={(e) => setMeta(e.target.value === "" ? "" : parseFloat(e.target.value))} onBlur={save} /></td>
+      <td><input aria-label="da base" className="num" type="number" min={50} max={100} step={0.5} value={meta} disabled={!canEdit} placeholder="da base" onChange={(e) => setMeta(e.target.value === "" ? "" : parseFloat(e.target.value))} onBlur={save} /></td>
       <td className="c"><input type="checkbox" checked={active} disabled={!canEdit} onChange={(e) => { setActive(e.target.checked); onSave({ active: e.target.checked }); }} /></td>
       <td>{canEdit && (
         <div className="rowActions">

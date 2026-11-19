@@ -298,7 +298,7 @@ export default function ImportWizard({ onDone, initialFiles }: { onDone: (firstB
                   <tr key={r.id} style={{ opacity: r.include ? 1 : 0.5 }}>
                     <td><input type="checkbox" checked={r.include} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, include: e.target.checked } : x)))} /></td>
                     <td>
-                      <input
+                      <input aria-label="Dê um nome para esta base"
                         value={r.name}
                         placeholder="Dê um nome para esta base"
                         onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
@@ -341,7 +341,7 @@ export default function ImportWizard({ onDone, initialFiles }: { onDone: (firstB
             </label>
             {makeCompany && (
               <div style={{ marginTop: ".5rem" }}>
-                <input value={companyName} placeholder="Nome da empresa (ex.: Grupo Silva Logística)" onChange={(e) => setCompanyName(e.target.value)} style={{ minWidth: 300 }} />
+                <input aria-label="Nome da empresa" value={companyName} placeholder="Nome da empresa (ex.: Grupo Silva Logística)" onChange={(e) => setCompanyName(e.target.value)} style={{ minWidth: 300 }} />
               </div>
             )}
           </div>

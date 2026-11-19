@@ -619,7 +619,7 @@ export default function Entregas({ openScreen }: { openScreen: (id: ActiveScreen
           <div>
             <div>
               <div className="toolbar entToolbar">
-                <input type="search" placeholder="Buscar motorista" value={q} onChange={(e) => setQ(e.target.value)} />
+                <input aria-label="Buscar motorista" type="search" placeholder="Buscar motorista" value={q} onChange={(e) => setQ(e.target.value)} />
                 <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
                   <option value="pior">Pior desempenho primeiro</option>
                   <option value="melhor">Melhor desempenho primeiro</option>

@@ -102,7 +102,7 @@ main{padding:1.25rem 1.5rem;max-width:1180px}
 .kpi.goal span{color:inherit;opacity:.85}
 
 .board{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
-.lanehead{display:grid;grid-template-columns:minmax(150px,240px) 1fr 86px;gap:1rem;padding:.5rem 1.1rem;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);border-bottom:1px solid var(--line)}
+.lanehead{display:grid;grid-template-columns:minmax(150px,240px) 1fr 86px;gap:1rem;padding:.5rem 1.1rem;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);border-bottom:1px solid var(--line)}
 .lane{display:grid;grid-template-columns:minmax(150px,240px) 1fr 86px;gap:1rem;align-items:center;padding:.65rem 1.1rem;border-bottom:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;width:100%;text-align:left;transition:background .12s ease}
 .lane:last-child{border-bottom:0}
 .lane:hover{background:var(--bg)}
@@ -114,7 +114,7 @@ main{padding:1.25rem 1.5rem;max-width:1180px}
 .track .p{background:var(--stamp);height:100%}
 .track .goal{position:absolute;top:-3px;bottom:-3px;width:0;border-left:2px solid color-mix(in srgb,var(--ink) 40%,transparent)}
 .pct{font-size:1.3rem;font-weight:700;text-align:right;line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-.pct small{display:block;font-size:.72rem;font-weight:400}
+.pct small{display:block;font-size:.75rem;font-weight:400}
 .pct.ok{color:var(--ok)} .pct.warn{color:var(--warn)} .pct.bad{color:var(--bad)}
 @media (max-width:640px){
   .lanehead{display:none}
@@ -209,11 +209,11 @@ img.preview{max-width:100%;border-radius:var(--r-sm)}
 
 table.drv{width:100%;border-collapse:collapse;font-size:.88rem}
 table.drv th,table.drv td{padding:.55rem .5rem;border-bottom:1px solid var(--line);text-align:left}
-table.drv th{color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em}
+table.drv th{color:var(--muted);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.03em}
 table.drv td.num{text-align:right;font-family:"IBM Plex Mono",monospace}
 table.drv input{width:100%;padding:.4rem .55rem;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface)}
 table.drv input.rate{width:90px;text-align:right}
-.badge{display:inline-block;padding:.1rem .5rem;font-size:.72rem;font-weight:600;border-radius:4px;background:color-mix(in srgb,currentColor 14%,var(--surface))}
+.badge{display:inline-block;padding:.1rem .5rem;font-size:.75rem;font-weight:600;border-radius:4px;background:color-mix(in srgb,currentColor 14%,var(--surface))}
 .badge.ok{color:var(--ok)}
 .badge.bad{color:var(--stamp)}
 
@@ -363,7 +363,7 @@ main{padding:1.5rem 1.75rem}
 
 /* Menos texto e menos botões: "?" com explicação e menu de ações */
 .dica{position:relative;display:inline-flex;vertical-align:middle;margin-left:.35rem}
-.dicaBtn{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:.72rem;font-weight:700;line-height:1;cursor:pointer;padding:0}
+.dicaBtn{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:.75rem;font-weight:700;line-height:1;cursor:pointer;padding:0}
 .dicaBtn:hover{color:var(--ink);border-color:var(--ink)}
 .dicaBox{position:absolute;left:0;top:26px;z-index:40;width:min(320px,80vw);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:.7rem .85rem;font-size:.85rem;font-weight:400;line-height:1.45;letter-spacing:0;text-transform:none}
 .menuAcoes{position:relative;display:inline-block}

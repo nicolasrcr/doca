@@ -73,12 +73,12 @@ export default function PlanoDeAcao() {
         <p className="muted">O que a base decidiu fazer para melhorar, quem cuida e se funcionou. Crie um item aqui ou a partir de uma sugestão em “Saúde e sugestões da base”.</p>
         {canEdit && (
           <form onSubmit={nova} style={{ display: "grid", gap: ".5rem", maxWidth: 560 }}>
-            <input placeholder="O que vai ser feito? (ex.: conversar com o motorista X sobre ausências)" value={titulo} onChange={(e) => setTitulo(e.target.value)} minLength={3} maxLength={200} required />
+            <input aria-label="O que vai ser feito?" placeholder="O que vai ser feito? (ex.: conversar com o motorista X sobre ausências)" value={titulo} onChange={(e) => setTitulo(e.target.value)} minLength={3} maxLength={200} required />
             <div className="row">
               <input placeholder="Responsável" value={resp} onChange={(e) => setResp(e.target.value)} maxLength={120} />
               <input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} aria-label="Prazo" />
             </div>
-            <textarea placeholder="Detalhes (opcional)" value={detalhe} onChange={(e) => setDetalhe(e.target.value)} maxLength={1000} />
+            <textarea aria-label="Detalhes (opcional)" placeholder="Detalhes (opcional)" value={detalhe} onChange={(e) => setDetalhe(e.target.value)} maxLength={1000} />
             <button className="btn primary" type="submit">Adicionar ao plano</button>
           </form>
         )}
