@@ -320,3 +320,26 @@ table.occTable td:nth-child(3){min-width:150px}
 .rastParam input[type=number]{width:80px;text-align:right}
 .rastLegend{margin:.6rem 0 0}
 .rastSec{margin:1.6rem 0 .6rem}
+
+/* Conferência */
+.confForm{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:.8rem 1.2rem;align-items:end;max-width:640px;margin:1rem 0}
+.confField{display:flex;flex-direction:column;gap:.3rem;font-size:.78rem;color:var(--muted)}
+.confField select{height:44px;border-radius:10px;border:1px solid var(--line);padding:0 .75rem;color:var(--ink)}
+.confCheck{display:flex;align-items:center;gap:.5rem;font-size:.88rem;height:44px}
+.confStart{grid-column:1/-1;height:46px;justify-self:start;padding:0 1.6rem}
+@media (max-width:560px){.confForm{grid-template-columns:1fr}.confStart{justify-self:stretch}}
+.confMini{display:none;margin-bottom:.7rem}
+.confMini b{font-variant-numeric:tabular-nums}
+@media (max-width:900px){.confMini{display:block}}
+#camWrap{width:100%;max-width:none}
+.confCam{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;margin-top:.7rem}
+.confCam .btn{height:40px}
+.lastCode{min-height:2.6rem;display:flex;align-items:center;padding:.5rem .8rem;margin-top:.7rem;background:var(--bg);border-radius:var(--r-sm)}
+.manualScan input{height:44px}
+.manualScan .btn{height:44px;white-space:nowrap}
+.confNum{font-size:.95rem;font-variant-numeric:tabular-nums}
+.confNum b{font-size:2rem;letter-spacing:-.03em}
+.progress.big{height:10px;border-radius:99px;margin-top:.6rem}
+.divlist{max-height:260px;overflow:auto}
+.confActions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.2rem}
+.confActions .btn{height:40px}
