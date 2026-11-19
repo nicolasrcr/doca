@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "doca-bases",
-  "compatibility_date": "2026-11-01",
+  "name": "doca-painel",
+  "compatibility_date": "2026-11-18",
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"
